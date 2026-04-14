@@ -90,7 +90,7 @@ body {
   padding: 10px 22px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--text3);
+  color: var(--text2);
   cursor: pointer;
   background: none;
   border: none;
@@ -123,13 +123,13 @@ body {
   padding: 20px 22px;
 }
 .card-title {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--text2);
-  margin-bottom: 18px;
-  padding-bottom: 11px;
+  letter-spacing: .09em;
+  color: var(--text);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -138,9 +138,9 @@ body {
 .field:last-child { margin-bottom: 0; }
 .label {
   display: block;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
-  color: var(--text2);
+  color: var(--text);
   margin-bottom: 5px;
   letter-spacing: .01em;
 }
@@ -235,9 +235,9 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
   text-transform: uppercase; color: var(--text3);
 }
 .expiry-sub {
-  display: block; font-size: 10px; font-weight: 700;
-  letter-spacing: .06em; text-transform: uppercase;
-  color: var(--text3); margin-bottom: 5px;
+  display: block; font-size: 11px; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase;
+  color: var(--text2); margin-bottom: 5px;
 }
 .t-badge {
   display: none; margin-top: 5px; padding: 4px 9px;
@@ -249,10 +249,10 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
 
 /* Section divider */
 .rule {
-  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em;
-  color: var(--text2);
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--text);
   display: flex; align-items: center; gap: 10px;
-  margin: 18px 0 14px;
+  margin: 20px 0 14px;
 }
 .rule::before, .rule::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
@@ -263,21 +263,26 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
   background: var(--field);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 13px 14px;
+  padding: 14px 15px;
 }
+.res-box.accent-grn { border-top: 2px solid var(--green); }
+.res-box.accent-red { border-top: 2px solid var(--red); }
+.res-box.accent-blu { border-top: 2px solid var(--blue); }
+.res-box.accent-amb { border-top: 2px solid var(--amber); }
 .res-name {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .07em; color: var(--text2); margin-bottom: 5px;
 }
 .res-val {
-  font-family: var(--mono); font-size: 22px; font-weight: 500;
+  font-family: var(--mono); font-size: 20px; font-weight: 500;
   color: var(--text); line-height: 1.2;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .res-val.grn { color: var(--green); }
 .res-val.red { color: var(--red); }
 .res-val.blu { color: var(--blue); }
 .res-val.amb { color: var(--amber); }
-.res-note { font-size: 11px; color: var(--text2); margin-top: 3px; }
+.res-note { font-size: 11.5px; color: var(--text2); margin-top: 4px; line-height: 1.4; }
 
 /* ── Greeks ── */
 .gk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -286,10 +291,10 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
   border-radius: 6px; padding: 10px 12px;
 }
 .gk-name {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .06em; color: var(--text2); margin-bottom: 4px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text); margin-bottom: 5px;
 }
-.gk-val { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); }
+.gk-val { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--text); }
 .gk-val.pos { color: var(--blue); }
 .gk-val.neg { color: var(--red); }
 
@@ -301,9 +306,9 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
 }
 .chart-block.show { opacity: 1; max-height: 3000px; overflow: visible; pointer-events: auto; }
 .chart-hd {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .09em; color: var(--text);
-  margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--text);
+  margin-bottom: 14px; padding-bottom: 11px; border-bottom: 1px solid var(--border);
 }
 .leg  { display: flex; gap: 18px; margin-bottom: 12px; flex-wrap: wrap; }
 .li   { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text); }
@@ -321,9 +326,9 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
 
 /* ── Disclaimer ── */
 .disclaimer {
-  margin-top: 40px; padding: 12px 16px; border-radius: 8px;
-  background: rgba(251,191,36,.04); border: 1px solid rgba(251,191,36,.12);
-  font-size: 12px; color: var(--text2); line-height: 1.7;
+  margin-top: 40px; padding: 14px 18px; border-radius: 8px;
+  background: rgba(251,191,36,.05); border: 1px solid rgba(251,191,36,.15);
+  font-size: 12.5px; color: var(--text2); line-height: 1.7;
 }
 .disclaimer strong { color: var(--text); font-weight: 500; }
 
@@ -415,25 +420,25 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
       <div class="card">
         <div class="card-title">Pricing Output</div>
         <div class="res-grid">
-          <div class="res-box">
+          <div class="res-box accent-grn">
             <div class="res-name">Call premium</div>
             <div class="res-val grn" id="r-call">—</div>
             <div class="res-note">Theoretical fair value</div>
           </div>
-          <div class="res-box">
+          <div class="res-box accent-red">
             <div class="res-name">Put premium</div>
             <div class="res-val red" id="r-put">—</div>
             <div class="res-note">Theoretical fair value</div>
           </div>
           <div class="res-box">
-            <div class="res-name">d₁</div>
+            <div class="res-name" style="font-size:13px;text-transform:none;letter-spacing:0;font-weight:600;color:var(--text)">d<sub style="font-size:10px;color:var(--blue)">1</sub></div>
             <div class="res-val blu" id="r-d1">—</div>
-            <div class="res-note">Adjusted log-moneyness</div>
+            <div class="res-note">[ln(S/K) + (r + σ²/2)T] / σ√T</div>
           </div>
           <div class="res-box">
-            <div class="res-name">d₂</div>
+            <div class="res-name" style="font-size:13px;text-transform:none;letter-spacing:0;font-weight:600;color:var(--text)">d<sub style="font-size:10px;color:var(--amber)">2</sub></div>
             <div class="res-val amb" id="r-d2">—</div>
-            <div class="res-note">= d₁ − σ√T</div>
+            <div class="res-note">d<sub>1</sub> − σ√T</div>
           </div>
         </div>
 
@@ -931,13 +936,14 @@ function calcBin() {
 ══════════════════════════════════════════════════════════ */
 var TOOLTIP = {
   backgroundColor: 'rgba(18,24,36,.97)',
-  borderColor: 'rgba(255,255,255,.08)', borderWidth: 1,
-  titleFont: { family: "'JetBrains Mono'", size: 11 },
-  bodyFont:  { family: "'JetBrains Mono'", size: 11 },
-  padding: 10
+  borderColor: 'rgba(255,255,255,.12)', borderWidth: 1,
+  titleFont: { family: "'JetBrains Mono'", size: 12 },
+  bodyFont:  { family: "'JetBrains Mono'", size: 12 },
+  padding: 12,
+  cornerRadius: 6
 };
 var GRID  = 'rgba(255,255,255,.04)';
-var TICK  = { color: '#7a90b0', font: { size: 11 } };
+var TICK  = { color: '#94a3bc', font: { size: 11 } };
 var ATICK = { color: '#7a90b0', font: { size: 12 } };
 
 function baseOpts(xl, yl) {
@@ -946,9 +952,9 @@ function baseOpts(xl, yl) {
     interaction: { mode: 'index', intersect: false },
     plugins: { legend: { display: false }, tooltip: TOOLTIP },
     scales: {
-      x: { title: { display: true, text: xl, color: '#7a90b0', font: { size: 12 } },
+      x: { title: { display: true, text: xl, color: '#94a3bc', font: { size: 12, weight: '500' } },
            ticks: TICK, grid: { color: GRID } },
-      y: { title: { display: true, text: yl, color: '#7a90b0', font: { size: 12 } },
+      y: { title: { display: true, text: yl, color: '#94a3bc', font: { size: 12, weight: '500' } },
            ticks: TICK, grid: { color: GRID } }
     }
   };
@@ -990,6 +996,11 @@ function drawPayoff(S, K, cPrem, pPrem, canvasId, showBoth, type) {
       { data:pnl, borderColor:'#34d399', borderWidth:1.5, borderDash:[5,4], pointRadius:0, tension:.1 }
     ];
   }
+
+  /* Zero break-even reference line */
+  var zeroLine = labels.map(function() { return 0; });
+  ds.push({ data: zeroLine, borderColor: 'rgba(255,255,255,.15)',
+    borderWidth: 1, borderDash: [2,2], pointRadius: 0, tension: 0 });
 
   destroyChart(canvasId);
   CHARTS[canvasId] = new Chart(document.getElementById(canvasId), {
