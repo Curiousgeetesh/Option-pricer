@@ -382,7 +382,7 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
           <div class="expiry-row">
             <div class="expiry-half">
               <span class="expiry-sub">Years (T)</span>
-              <input type="number" id="bs-T" placeholder="0.5" step="0.01" min="0" oninput="calcBS()">
+              <input type="number" id="bs-T" placeholder="0.5" step="0.0001" min="0.0001" oninput="calcBS()">
               <div class="field-hint">0.25 = 3 mo &nbsp;·&nbsp; 0.5 = 6 mo &nbsp;·&nbsp; 1 = 1 yr</div>
             </div>
             <div class="expiry-sep">or</div>
@@ -724,17 +724,23 @@ function onDatePick() {
     calcBS(); return;
   }
   var T    = diff / (365.25 * 24 * 3600 * 1000);
-  var Trd  = Math.round(T * 100) / 100;
-  var days = Math.round(diff / 86400000);
+  var Trd  = Math.max(Math.round(T * 10000) / 10000, 0.0001);
+  var days   = Math.floor(diff / 86400000);
+  var hours  = Math.floor((diff % 86400000) / 3600000);
+  var timeStr = days > 0
+    ? days + (days === 1 ? ' day' : ' days') + (hours > 0 ? ' ' + hours + 'h' : '')
+    : hours + (hours === 1 ? ' hour' : ' hours');
   document.getElementById('bs-T').value = Trd;
   badge.className = 't-badge show';
-  badge.textContent = days + ' days → T ≈ ' + Trd + ' yrs (filled above)';
+  badge.textContent = timeStr + ' → T = ' + Trd + ' yrs (filled above)';
   calcBS();
 }
 
 function getT() {
-  var T = parseFloat(gv('bs-T'));
-  return (!T || T <= 0) ? null : T;
+  var v = gv('bs-T');
+  var T = parseFloat(v);
+  if (!v || isNaN(T) || T <= 0) return null;
+  return Math.max(T, 0.0001);  /* floor at ~1 hour */
 }
 
 /* ══════════════════════════════════════════════════════════
