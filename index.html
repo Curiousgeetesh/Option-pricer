@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OptionPricer — Black-Scholes & Binomial CRR Calculator</title>
+<meta name="description" content="Professional option pricing calculator using Black-Scholes and Cox-Ross-Rubinstein Binomial models. Real-time Greeks, payoff diagrams, and tree visualisation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Design tokens ── */
+:root {
+  --bg:      #0d1117;
+  --card:    #161c27;
+  --field:   #1c2435;
+  --field2:  #212c40;
+  --border:  #2a3549;
+  --border2: #3a4d68;
+  --text:    #e2e8f4;
+  --text2:   #94a3bc;
+  --text3:   #5c6f88;
+  --blue:    #4f91f5;
+  --green:   #34d399;
+  --red:     #f87171;
+  --amber:   #fbbf24;
+  --sans:    'Inter', sans-serif;
+  --mono:    'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px 80px; }
+
+/* ── Sticky header: brand + model tabs ── */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 0 11px;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+  transition: opacity .15s;
+}
+.topbar:hover { opacity: .75; }
+.brand-name {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  color: var(--text);
+}
+.brand-name em { font-style: normal; color: var(--blue); }
+.topbar-sep {
+  display: inline-block;
+  width: 1px; height: 14px;
+  background: var(--border2);
+  margin: 0 14px;
+  vertical-align: middle;
+}
+.topbar-sub {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text2);
+  letter-spacing: -.01em;
+}
+
+/* ── Model tabs ── */
+.tabs { display: flex; }
+.tab {
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text3);
+  cursor: pointer;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .15s, border-color .15s;
+  letter-spacing: -.01em;
+}
+.tab:hover { color: var(--text2); }
+.tab.on { color: var(--text); border-bottom-color: var(--blue); }
+
+/* ── Panels ── */
+.panel { display: none; }
+.panel.on { display: block; }
+
+/* ── Two-column layout ── */
+.two-col {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ── Cards ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 22px;
+}
+.card-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--text2);
+  margin-bottom: 18px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Form elements ── */
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 5px;
+  letter-spacing: .01em;
+}
+.label small { font-weight: 400; color: var(--text3); font-size: 11px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-hint { font-size: 11.5px; color: var(--text2); margin-top: 5px; line-height: 1.5; }
+
+input[type=number],
+input[type=datetime-local],
+select {
+  width: 100%;
+  padding: 9px 11px;
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s, background .15s;
+}
+input[type=number]::placeholder {
+  color: var(--text3);
+  font-family: var(--sans);
+  font-size: 12.5px;
+}
+input[type=number]:hover,
+input[type=datetime-local]:hover,
+select:hover { border-color: var(--border2); }
+input[type=number]:focus,
+input[type=datetime-local]:focus,
+select:focus { border-color: var(--blue); background: var(--field2); outline: none; }
+
+/* Spinner arrows: hidden at rest, appear on hover/focus */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: inner-spin-button;
+  opacity: 0;
+  height: 28px;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+input[type=number]:hover::-webkit-inner-spin-button,
+input[type=number]:hover::-webkit-outer-spin-button,
+input[type=number]:focus::-webkit-inner-spin-button,
+input[type=number]:focus::-webkit-outer-spin-button { opacity: .6; }
+
+/* Select */
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%235c6f88' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  padding-right: 32px;
+}
+select option { background: #1c2435; color: #e2e8f4; }
+
+/* Datetime picker */
+input[type=datetime-local] { cursor: pointer; }
+input[type=datetime-local]::-webkit-datetime-edit { color: var(--text); }
+input[type=datetime-local]::-webkit-datetime-edit-text { color: var(--text3); }
+input[type=datetime-local]::-webkit-datetime-edit-year-field,
+input[type=datetime-local]::-webkit-datetime-edit-month-field,
+input[type=datetime-local]::-webkit-datetime-edit-day-field,
+input[type=datetime-local]::-webkit-datetime-edit-hour-field,
+input[type=datetime-local]::-webkit-datetime-edit-minute-field {
+  color: var(--text); border-radius: 2px; padding: 1px 2px;
+}
+input[type=datetime-local]::-webkit-datetime-edit-year-field:focus,
+input[type=datetime-local]::-webkit-datetime-edit-month-field:focus,
+input[type=datetime-local]::-webkit-datetime-edit-day-field:focus,
+input[type=datetime-local]::-webkit-datetime-edit-hour-field:focus,
+input[type=datetime-local]::-webkit-datetime-edit-minute-field:focus {
+  background: rgba(79,145,245,.22); color: #fff; outline: none;
+}
+input[type=datetime-local]::-webkit-calendar-picker-indicator {
+  background: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234f91f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: center;
+  width: 16px; height: 16px; cursor: pointer; opacity: .7; transition: opacity .15s;
+}
+input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+/* Expiry two-column layout */
+.expiry-row { display: flex; align-items: flex-start; gap: 0; }
+.expiry-half { flex: 1; min-width: 0; }
+.expiry-sep {
+  padding: 26px 10px 0; flex-shrink: 0;
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--text3);
+}
+.expiry-sub {
+  display: block; font-size: 10px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 5px;
+}
+.t-badge {
+  display: none; margin-top: 5px; padding: 4px 9px;
+  background: rgba(79,145,245,.1); border: 1px solid rgba(79,145,245,.2);
+  border-radius: 5px; font-size: 11px; font-family: var(--mono); color: var(--blue);
+}
+.t-badge.show { display: inline-block; }
+.t-badge.past { background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.25); color: var(--red); }
+
+/* Section divider */
+.rule {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--text2);
+  display: flex; align-items: center; gap: 10px;
+  margin: 18px 0 14px;
+}
+.rule::before, .rule::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── Result boxes ── */
+.res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.res-3    { grid-template-columns: 1fr 1fr 1fr; }
+.res-box  {
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 13px 14px;
+}
+.res-name {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--text2); margin-bottom: 5px;
+}
+.res-val {
+  font-family: var(--mono); font-size: 22px; font-weight: 500;
+  color: var(--text); line-height: 1.2;
+}
+.res-val.grn { color: var(--green); }
+.res-val.red { color: var(--red); }
+.res-val.blu { color: var(--blue); }
+.res-val.amb { color: var(--amber); }
+.res-note { font-size: 11px; color: var(--text2); margin-top: 3px; }
+
+/* ── Greeks ── */
+.gk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gk {
+  background: var(--field); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px 12px;
+}
+.gk-name {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text2); margin-bottom: 4px;
+}
+.gk-val { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); }
+.gk-val.pos { color: var(--blue); }
+.gk-val.neg { color: var(--red); }
+
+/* ── Charts ── */
+.chart-block {
+  margin-top: 16px;
+  opacity: 0; max-height: 0; overflow: hidden; pointer-events: none;
+  transition: opacity .4s ease, max-height .55s ease;
+}
+.chart-block.show { opacity: 1; max-height: 3000px; overflow: visible; pointer-events: auto; }
+.chart-hd {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .09em; color: var(--text);
+  margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+.leg  { display: flex; gap: 18px; margin-bottom: 12px; flex-wrap: wrap; }
+.li   { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text); }
+.lsq  { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.lcir { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.llin { width: 26px; height: 2px; flex-shrink: 0; opacity: .6; }
+
+/* ── SVG Tree ── */
+.node-stock  { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 500; fill: #e2e8f4; }
+.node-option { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 500; fill: #34d399; }
+.prob-label  { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 500; fill: #7a90b0; }
+.step-label  { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; fill: #5c6f88; }
+.branch-up   { stroke: rgba(79,145,245,.45);  stroke-width: 1.5; fill: none; }
+.branch-dn   { stroke: rgba(248,113,113,.35); stroke-width: 1.5; fill: none; }
+
+/* ── Disclaimer ── */
+.disclaimer {
+  margin-top: 40px; padding: 12px 16px; border-radius: 8px;
+  background: rgba(251,191,36,.04); border: 1px solid rgba(251,191,36,.12);
+  font-size: 12px; color: var(--text2); line-height: 1.7;
+}
+.disclaimer strong { color: var(--text); font-weight: 500; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--field2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ── Sticky header ── -->
+  <div class="sticky-header">
+    <nav class="topbar" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">
+      <span class="brand-name">Option<em>Pricer</em></span>
+      <span class="topbar-sep"></span>
+      <span class="topbar-sub">Option Pricing Calculator</span>
+    </nav>
+    <div class="tabs">
+      <button class="tab on" onclick="switchTab('bs',this)">Black-Scholes</button>
+      <button class="tab"    onclick="switchTab('bin',this)">Binomial Tree (CRR)</button>
+    </div>
+  </div>
+
+  <!-- ══════════ BLACK-SCHOLES ══════════ -->
+  <div class="panel on" id="p-bs">
+    <div class="two-col">
+
+      <!-- Inputs -->
+      <div class="card">
+        <div class="card-title">Parameters</div>
+
+        <div class="field">
+          <label class="label">Option type</label>
+          <select id="bs-type" onchange="calcBS()">
+            <option value="call">Call option</option>
+            <option value="put">Put option</option>
+            <option value="both">Both — call &amp; put</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="label">Spot price S</label>
+            <input type="number" id="bs-S" placeholder="e.g. 150" step="1" min="0" oninput="calcBS()">
+          </div>
+          <div class="field">
+            <label class="label">Strike price K</label>
+            <input type="number" id="bs-K" placeholder="e.g. 140" step="1" min="0" oninput="calcBS()">
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label">Time to expiry</label>
+          <div class="expiry-row">
+            <div class="expiry-half">
+              <span class="expiry-sub">Years (T)</span>
+              <input type="number" id="bs-T" placeholder="0.5" step="0.01" min="0" oninput="calcBS()">
+              <div class="field-hint">0.25 = 3 mo &nbsp;·&nbsp; 0.5 = 6 mo &nbsp;·&nbsp; 1 = 1 yr</div>
+            </div>
+            <div class="expiry-sep">or</div>
+            <div class="expiry-half">
+              <span class="expiry-sub">Pick a date</span>
+              <input type="datetime-local" id="bs-expiry" oninput="onDatePick()">
+              <div class="t-badge" id="bs-t-badge"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="label">Volatility σ <small>(%)</small></label>
+            <input type="number" id="bs-vol" placeholder="e.g. 28" step="0.5" min="0" oninput="calcBS()">
+          </div>
+          <div class="field">
+            <label class="label">Risk-free rate r <small>(%)</small></label>
+            <input type="number" id="bs-r" placeholder="e.g. 8" step="0.5" oninput="calcBS()">
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label">Dividend yield q <small>(% — use 0 if none)</small></label>
+          <input type="number" id="bs-q" value="0" step="0.5" min="0" oninput="calcBS()">
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="card">
+        <div class="card-title">Pricing Output</div>
+        <div class="res-grid">
+          <div class="res-box">
+            <div class="res-name">Call premium</div>
+            <div class="res-val grn" id="r-call">—</div>
+            <div class="res-note">Theoretical fair value</div>
+          </div>
+          <div class="res-box">
+            <div class="res-name">Put premium</div>
+            <div class="res-val red" id="r-put">—</div>
+            <div class="res-note">Theoretical fair value</div>
+          </div>
+          <div class="res-box">
+            <div class="res-name">d₁</div>
+            <div class="res-val blu" id="r-d1">—</div>
+            <div class="res-note">Adjusted log-moneyness</div>
+          </div>
+          <div class="res-box">
+            <div class="res-name">d₂</div>
+            <div class="res-val amb" id="r-d2">—</div>
+            <div class="res-note">= d₁ − σ√T</div>
+          </div>
+        </div>
+
+        <div class="rule">Option Greeks</div>
+        <div class="gk-grid">
+          <div class="gk"><div class="gk-name">Δ Call delta</div><div class="gk-val pos" id="g-cd">—</div></div>
+          <div class="gk"><div class="gk-name">Δ Put delta</div><div class="gk-val neg" id="g-pd">—</div></div>
+          <div class="gk"><div class="gk-name">Γ Gamma</div><div class="gk-val" id="g-gm">—</div></div>
+          <div class="gk"><div class="gk-name">Θ Call / day</div><div class="gk-val neg" id="g-ct">—</div></div>
+          <div class="gk"><div class="gk-name">Θ Put / day</div><div class="gk-val neg" id="g-pt">—</div></div>
+          <div class="gk"><div class="gk-name">V Vega / 1%σ</div><div class="gk-val pos" id="g-vg">—</div></div>
+          <div class="gk"><div class="gk-name">ρ Call / 1%r</div><div class="gk-val pos" id="g-cr">—</div></div>
+          <div class="gk"><div class="gk-name">ρ Put / 1%r</div><div class="gk-val neg" id="g-pr">—</div></div>
+          <div class="gk"><div class="gk-name">T (years)</div><div class="gk-val" id="g-tv">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payoff diagram -->
+    <div class="chart-block card" id="bs-payoff-wrap" style="margin-top:16px">
+      <div class="chart-hd">Payoff at expiry — profit &amp; loss</div>
+      <div class="leg">
+        <div class="li"><div class="lsq" style="background:#4f91f5"></div>Call payoff</div>
+        <div class="li"><div class="lsq" style="background:#f87171"></div>Put payoff</div>
+        <div class="li"><div class="lsq" style="background:#34d399;opacity:.8"></div>Call net P&amp;L</div>
+        <div class="li"><div class="lsq" style="background:#fbbf24;opacity:.8"></div>Put net P&amp;L</div>
+      </div>
+      <div style="position:relative;height:260px">
+        <canvas id="payoffChart" role="img" aria-label="Option payoff diagram"></canvas>
+      </div>
+    </div>
+
+    <!-- Premium sensitivity -->
+    <div class="chart-block card" id="bs-sens-wrap" style="margin-top:16px">
+      <div class="chart-hd">Option premium vs spot price</div>
+      <div class="leg">
+        <div class="li"><div class="lsq" style="background:#4f91f5"></div>Call premium</div>
+        <div class="li"><div class="lsq" style="background:#f87171"></div>Put premium</div>
+      </div>
+      <div style="position:relative;height:230px">
+        <canvas id="sensChart" role="img" aria-label="Premium sensitivity chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ BINOMIAL CRR ══════════ -->
+  <div class="panel" id="p-bin">
+    <div class="two-col">
+
+      <!-- Inputs -->
+      <div class="card">
+        <div class="card-title">Parameters</div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="label">Option type</label>
+            <select id="bin-type" onchange="calcBin()">
+              <option value="call">Call option</option>
+              <option value="put">Put option</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="label">Exercise style</label>
+            <select id="bin-style" onchange="calcBin()">
+              <option value="european">European</option>
+              <option value="american">American</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="label">Spot price S</label>
+            <input type="number" id="bin-S" placeholder="e.g. 150" step="1" min="0" oninput="calcBin()">
+          </div>
+          <div class="field">
+            <label class="label">Strike price K</label>
+            <input type="number" id="bin-K" placeholder="e.g. 140" step="1" min="0" oninput="calcBin()">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="label">Time to expiry T <small>(years)</small></label>
+            <input type="number" id="bin-T" placeholder="e.g. 0.5" step="0.01" min="0" oninput="calcBin()">
+            <div class="field-hint">0.25 = 3 mo &nbsp;·&nbsp; 0.5 = 6 mo &nbsp;·&nbsp; 1 = 1 yr</div>
+          </div>
+          <div class="field">
+            <label class="label">Risk-free rate r <small>(%)</small></label>
+            <input type="number" id="bin-r" placeholder="e.g. 8" step="0.5" oninput="calcBin()">
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label">Dividend yield q <small>(% — use 0 if none)</small></label>
+          <input type="number" id="bin-q" value="0" step="0.5" min="0" oninput="calcBin()">
+        </div>
+
+        <div class="rule">Volatility / Up-Down factors</div>
+
+        <div class="field">
+          <label class="label">Input method</label>
+          <select id="bin-meth" onchange="toggleBinMeth();calcBin()">
+            <option value="vol">Specify σ — model computes u and d</option>
+            <option value="ud">Set u and d directly</option>
+          </select>
+        </div>
+
+        <div id="bin-vol-sec">
+          <div class="field-row">
+            <div class="field">
+              <label class="label">Volatility σ <small>(%)</small></label>
+              <input type="number" id="bin-vol" placeholder="e.g. 28" step="0.5" min="0" oninput="calcBin()">
+            </div>
+            <div class="field">
+              <label class="label">Steps N</label>
+              <input type="number" id="bin-N" value="50" step="1" min="1" max="500" oninput="calcBin()">
+              <div class="field-hint">Higher N → converges to BS</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="bin-ud-sec" style="display:none">
+          <div class="field-row">
+            <div class="field">
+              <label class="label">Up factor u</label>
+              <input type="number" id="bin-u" placeholder="e.g. 1.10" step="0.01" min="1.01" oninput="calcBin()">
+              <div class="field-hint">1.10 = +10% per step</div>
+            </div>
+            <div class="field">
+              <label class="label">Down factor d</label>
+              <input type="number" id="bin-d" placeholder="e.g. 0.91" step="0.01" max="0.99" oninput="calcBin()">
+              <div class="field-hint">CRR: d = 1/u</div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">Steps N</label>
+            <input type="number" id="bin-N2" value="50" step="1" min="1" max="500" oninput="calcBin()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="card">
+        <div class="card-title">Pricing Output</div>
+        <div class="res-grid res-3">
+          <div class="res-box">
+            <div class="res-name">Option price</div>
+            <div class="res-val blu" id="bin-price">—</div>
+            <div class="res-note">Binomial fair value</div>
+          </div>
+          <div class="res-box">
+            <div class="res-name">Implied σ</div>
+            <div class="res-val" id="bin-iv">—</div>
+            <div class="res-note">Annualised, from u &amp; d</div>
+          </div>
+          <div class="res-box">
+            <div class="res-name">Risk-neutral p</div>
+            <div class="res-val amb" id="bin-rp">—</div>
+            <div class="res-note">Up-move probability π</div>
+          </div>
+        </div>
+
+        <div class="rule">Tree parameters</div>
+        <div class="gk-grid">
+          <div class="gk"><div class="gk-name">Up factor u</div><div class="gk-val pos" id="b-u">—</div></div>
+          <div class="gk"><div class="gk-name">Down factor d</div><div class="gk-val neg" id="b-d">—</div></div>
+          <div class="gk"><div class="gk-name">Δt per step</div><div class="gk-val" id="b-dt">—</div></div>
+          <div class="gk"><div class="gk-name">Δ Delta</div><div class="gk-val pos" id="b-dl">—</div></div>
+          <div class="gk"><div class="gk-name">BS reference</div><div class="gk-val" id="b-bs">—</div></div>
+          <div class="gk"><div class="gk-name">Binomial vs BS</div><div class="gk-val" id="b-df">—</div></div>
+        </div>
+
+        <div id="bin-conv-wrap" style="display:none;margin-top:18px">
+          <div class="rule" style="margin-top:0">Convergence to Black-Scholes</div>
+          <div class="leg">
+            <div class="li"><div class="lsq" style="background:#4f91f5"></div>Binomial price</div>
+            <div class="li"><div class="lsq" style="background:#34d399;opacity:.8"></div>BS reference</div>
+          </div>
+          <div style="position:relative;height:155px">
+            <canvas id="convChart" role="img" aria-label="Binomial convergence chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Binomial payoff -->
+    <div class="chart-block card" id="bin-payoff-wrap" style="margin-top:16px">
+      <div class="chart-hd">Payoff at expiry — profit &amp; loss</div>
+      <div class="leg">
+        <div class="li"><div class="lsq" style="background:#4f91f5"></div>Option payoff</div>
+        <div class="li"><div class="lsq" style="background:#34d399;opacity:.8"></div>Net P&amp;L after premium</div>
+      </div>
+      <div style="position:relative;height:240px">
+        <canvas id="binPayoffChart" role="img" aria-label="Binomial payoff diagram"></canvas>
+      </div>
+    </div>
+
+    <!-- SVG binomial tree -->
+    <div class="chart-block card" id="bin-tree-wrap" style="margin-top:16px">
+      <div class="chart-hd">Binomial price tree — stock price &middot; option value &middot; probability</div>
+      <div class="leg" style="margin-bottom:14px">
+        <div class="li"><div class="lcir" style="background:#4f91f5"></div>Stock price (ITM = blue ring)</div>
+        <div class="li"><div class="lcir" style="background:#34d399"></div>Option value</div>
+        <div class="li"><div class="llin" style="background:#4f91f5"></div>p = up probability</div>
+        <div class="li"><div class="llin" style="background:#f87171"></div>1−p = down probability</div>
+      </div>
+      <div style="overflow-x:auto;overflow-y:hidden;padding-bottom:4px">
+        <svg id="bin-svg-tree" style="display:block" role="img" aria-label="Binomial tree diagram"></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>A note on these numbers:</strong>
+    These are theoretical prices based on model assumptions — lognormal returns, constant volatility, continuous trading, no transaction costs.
+    Real options trade differently due to supply &amp; demand, skew, and liquidity.
+    Always verify with a live data source before making any trading decisions.
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════════════════════
+   MATHS
+   Normal CDF via Abramowitz & Stegun approximation (max err 1.5×10⁻⁷)
+   Normal PDF — standard formula
+══════════════════════════════════════════════════════════ */
+function erf(x) {
+  var a1= 0.254829592, a2=-0.284496736, a3= 1.421413741,
+      a4=-1.453152027, a5= 1.061405429, p = 0.3275911;
+  var sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  var t = 1 / (1 + p * x);
+  var y = 1 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1) * t * Math.exp(-x*x);
+  return sign * y;
+}
+function Phi(x) { return 0.5 * (1 + erf(x / Math.SQRT2)); }
+function phi(x) { return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI); }
+
+/* ══════════════════════════════════════════════════════════
+   DOM HELPERS
+══════════════════════════════════════════════════════════ */
+function gv(id)       { return document.getElementById(id).value; }
+function flt(id)      { var v = parseFloat(gv(id)); return isNaN(v) ? null : v; }
+function setText(id,v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+function showEl(id)   { document.getElementById(id).classList.add('show'); }
+function hideEl(id)   { document.getElementById(id).classList.remove('show'); }
+
+var CHARTS = {};
+function destroyChart(id) {
+  if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB SWITCHING
+══════════════════════════════════════════════════════════ */
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(function(b)  { b.classList.remove('on'); });
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('on'); });
+  btn.classList.add('on');
+  document.getElementById('p-' + id).classList.add('on');
+  if (id === 'bin') calcBin();
+}
+
+function toggleBinMeth() {
+  var m = gv('bin-meth');
+  document.getElementById('bin-vol-sec').style.display = m === 'vol' ? 'block' : 'none';
+  document.getElementById('bin-ud-sec').style.display  = m === 'ud'  ? 'block' : 'none';
+}
+
+/* ══════════════════════════════════════════════════════════
+   EXPIRY / T HANDLING
+   T is read from the years field (bs-T).
+   The datetime picker auto-fills bs-T when a date is chosen.
+   This prevents wall-clock drift corrupting d1.
+══════════════════════════════════════════════════════════ */
+function onDatePick() {
+  var v     = gv('bs-expiry');
+  var badge = document.getElementById('bs-t-badge');
+  if (!v) { badge.className = 't-badge'; calcBS(); return; }
+  var diff = new Date(v) - new Date();
+  if (diff <= 0) {
+    badge.className = 't-badge past show';
+    badge.textContent = 'This date is in the past — enter T manually';
+    calcBS(); return;
+  }
+  var T    = diff / (365.25 * 24 * 3600 * 1000);
+  var Trd  = Math.round(T * 100) / 100;
+  var days = Math.round(diff / 86400000);
+  document.getElementById('bs-T').value = Trd;
+  badge.className = 't-badge show';
+  badge.textContent = days + ' days → T ≈ ' + Trd + ' yrs (filled above)';
+  calcBS();
+}
+
+function getT() {
+  var T = parseFloat(gv('bs-T'));
+  return (!T || T <= 0) ? null : T;
+}
+
+/* ══════════════════════════════════════════════════════════
+   INPUT NORMALISATION
+   Accepts both % form (28) and decimal form (0.28).
+   Anything ≥ 1 is treated as percentage and divided by 100.
+   Anything 0 < x < 1 is treated as already fractional.
+══════════════════════════════════════════════════════════ */
+function pct(id) {
+  var v = flt(id);
+  if (v === null) return null;
+  return (v > 0 && v < 1) ? v : v / 100;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BLACK-SCHOLES
+══════════════════════════════════════════════════════════ */
+function calcBS() {
+  var S   = flt('bs-S');
+  var K   = flt('bs-K');
+  var T   = getT();
+  var sig = pct('bs-vol');
+  var r   = pct('bs-r');
+  var q   = flt('bs-q') !== null ? pct('bs-q') : 0;
+
+  var IDS = ['r-call','r-put','r-d1','r-d2',
+             'g-cd','g-pd','g-gm','g-ct','g-pt','g-vg','g-cr','g-pr','g-tv'];
+
+  if (!S || S <= 0 || !K || K <= 0 || !T || sig === null || sig <= 0 || r === null) {
+    IDS.forEach(function(id) { setText(id, '—'); });
+    hideEl('bs-payoff-wrap'); hideEl('bs-sens-wrap');
+    return;
+  }
+
+  var sqT  = Math.sqrt(T);
+  var d1   = (Math.log(S / K) + (r - q + 0.5 * sig * sig) * T) / (sig * sqT);
+  var d2   = d1 - sig * sqT;
+  var eqT  = Math.exp(-q * T);
+  var erT  = Math.exp(-r * T);
+
+  /* Premiums */
+  var C = S * eqT * Phi(d1)  - K * erT * Phi(d2);
+  var P = K * erT * Phi(-d2) - S * eqT * Phi(-d1);
+
+  /* Greeks */
+  var cDelta =  eqT * Phi(d1);
+  var pDelta =  eqT * (Phi(d1) - 1);
+  var gamma  =  phi(d1) * eqT / (S * sig * sqT);
+  var vega   =  S * eqT * phi(d1) * sqT / 100;                    /* per 1% σ */
+  var cTheta = (-S * phi(d1) * sig * eqT / (2 * sqT)
+                - r * K * erT * Phi(d2)
+                + q * S * eqT * Phi(d1)) / 365;
+  var pTheta = (-S * phi(d1) * sig * eqT / (2 * sqT)
+                + r * K * erT * Phi(-d2)
+                - q * S * eqT * Phi(-d1)) / 365;
+  var cRho   =  K * T * erT * Phi(d2)  / 100;                     /* per 1% r */
+  var pRho   = -K * T * erT * Phi(-d2) / 100;
+
+  setText('r-call', C.toFixed(4));
+  setText('r-put',  P.toFixed(4));
+  setText('r-d1',   d1.toFixed(6));
+  setText('r-d2',   d2.toFixed(6));
+  setText('g-cd',   cDelta.toFixed(5));
+  setText('g-pd',   pDelta.toFixed(5));
+  setText('g-gm',   gamma.toFixed(7));
+  setText('g-ct',   cTheta.toFixed(5));
+  setText('g-pt',   pTheta.toFixed(5));
+  setText('g-vg',   vega.toFixed(5));
+  setText('g-cr',   cRho.toFixed(5));
+  setText('g-pr',   pRho.toFixed(5));
+  setText('g-tv',   T.toFixed(4));
+
+  showEl('bs-payoff-wrap');
+  showEl('bs-sens-wrap');
+  drawPayoff(S, K, C, P, 'payoffChart', true);
+  drawSens(K, sig, r, q, T);
+}
+
+/* ══════════════════════════════════════════════════════════
+   BINOMIAL CRR
+══════════════════════════════════════════════════════════ */
+function binCRR(S, K, T, r, q, Ns, u, d, style, type) {
+  var dt   = T / Ns;
+  var p    = (Math.exp((r - q) * dt) - d) / (u - d);
+  var disc = Math.exp(-r * dt);
+  if (p < 0 || p > 1) return null;        /* arbitrage — invalid params */
+
+  /* Terminal payoffs */
+  var vs = [];
+  for (var i = 0; i <= Ns; i++) {
+    var sT = S * Math.pow(u, Ns - i) * Math.pow(d, i);
+    vs.push(type === 'call' ? Math.max(sT - K, 0) : Math.max(K - sT, 0));
+  }
+  /* Backward induction */
+  for (var j = Ns - 1; j >= 0; j--) {
+    for (var i = 0; i <= j; i++) {
+      var hold = disc * (p * vs[i] + (1 - p) * vs[i + 1]);
+      if (style === 'american') {
+        var sNow = S * Math.pow(u, j - i) * Math.pow(d, i);
+        var ex   = type === 'call' ? Math.max(sNow - K, 0) : Math.max(K - sNow, 0);
+        vs[i]    = Math.max(hold, ex);
+      } else {
+        vs[i] = hold;
+      }
+    }
+  }
+  return { price: vs[0], p: p };
+}
+
+function bsRef(S, K, T, sig, r, q, type) {
+  if (T <= 0 || sig <= 0 || S <= 0 || K <= 0) return 0;
+  var sqT = Math.sqrt(T);
+  var d1  = (Math.log(S / K) + (r - q + 0.5 * sig * sig) * T) / (sig * sqT);
+  var d2  = d1 - sig * sqT;
+  return type === 'call'
+    ? S * Math.exp(-q*T) * Phi(d1)  - K * Math.exp(-r*T) * Phi(d2)
+    : K * Math.exp(-r*T) * Phi(-d2) - S * Math.exp(-q*T) * Phi(-d1);
+}
+
+function calcBin() {
+  var S     = flt('bin-S');
+  var K     = flt('bin-K');
+  var T     = flt('bin-T');
+  var r     = pct('bin-r');
+  var q     = flt('bin-q') !== null ? pct('bin-q') : 0;
+  var type  = gv('bin-type');
+  var style = gv('bin-style');
+  var meth  = gv('bin-meth');
+
+  var BLANK = ['bin-price','bin-iv','bin-rp','b-u','b-d','b-dt','b-dl','b-bs','b-df'];
+
+  if (!S || S <= 0 || !K || K <= 0 || !T || T <= 0 || r === null) {
+    BLANK.forEach(function(id) { setText(id, '—'); });
+    hideEl('bin-payoff-wrap'); hideEl('bin-tree-wrap');
+    document.getElementById('bin-conv-wrap').style.display = 'none';
+    return;
+  }
+
+  var u, d, sig, Ns;
+
+  if (meth === 'vol') {
+    sig = pct('bin-vol');
+    Ns  = parseInt(gv('bin-N')) || 50;
+    if (!sig || sig <= 0) { BLANK.forEach(function(id) { setText(id,'—'); }); return; }
+    var dt = T / Ns;
+    u = Math.exp(sig * Math.sqrt(dt));
+    d = 1 / u;
+  } else {
+    u   = flt('bin-u');
+    d   = flt('bin-d');
+    Ns  = parseInt(gv('bin-N2')) || 50;
+    if (!u || !d || u <= 1 || d >= 1 || d <= 0) {
+      BLANK.forEach(function(id) { setText(id,'—'); }); return;
+    }
+    sig = Math.log(u) / Math.sqrt(T / Ns);
+  }
+
+  var res = binCRR(S, K, T, r, q, Ns, u, d, style, type);
+  if (!res) { BLANK.forEach(function(id) { setText(id, 'ERR'); }); return; }
+
+  var bs   = bsRef(S, K, T, sig, r, q, type);
+  var dUp  = binCRR(S * 1.001, K, T, r, q, Ns, u, d, style, type);
+  var dDn  = binCRR(S * 0.999, K, T, r, q, Ns, u, d, style, type);
+  var delta = (dUp && dDn) ? (dUp.price - dDn.price) / (S * 0.002) : 0;
+  var diff  = res.price - bs;
+
+  setText('bin-price', res.price.toFixed(4));
+  setText('bin-iv',    (sig * 100).toFixed(2) + '%');
+  setText('bin-rp',    res.p.toFixed(5));
+  setText('b-u',       u.toFixed(5));
+  setText('b-d',       d.toFixed(5));
+  setText('b-dt',      (T / Ns).toFixed(6));
+  setText('b-dl',      delta.toFixed(5));
+  setText('b-bs',      bs.toFixed(4));
+  setText('b-df',      (diff >= 0 ? '+' : '') + diff.toFixed(4));
+
+  showEl('bin-payoff-wrap');
+  showEl('bin-tree-wrap');
+  document.getElementById('bin-conv-wrap').style.display = 'block';
+
+  drawConv(S, K, T, r, q, u, d, Ns, style, type, bs);
+  drawPayoff(S, K, res.price, 0, 'binPayoffChart', false, type);
+  drawSVGTree(S, K, T, r, q, Ns, u, d, style, type, res.p);
+}
+
+/* ══════════════════════════════════════════════════════════
+   CHARTS
+══════════════════════════════════════════════════════════ */
+var TOOLTIP = {
+  backgroundColor: 'rgba(18,24,36,.97)',
+  borderColor: 'rgba(255,255,255,.08)', borderWidth: 1,
+  titleFont: { family: "'JetBrains Mono'", size: 11 },
+  bodyFont:  { family: "'JetBrains Mono'", size: 11 },
+  padding: 10
+};
+var GRID  = 'rgba(255,255,255,.04)';
+var TICK  = { color: '#7a90b0', font: { size: 11 } };
+var ATICK = { color: '#7a90b0', font: { size: 12 } };
+
+function baseOpts(xl, yl) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { display: false }, tooltip: TOOLTIP },
+    scales: {
+      x: { title: { display: true, text: xl, color: '#7a90b0', font: { size: 12 } },
+           ticks: TICK, grid: { color: GRID } },
+      y: { title: { display: true, text: yl, color: '#7a90b0', font: { size: 12 } },
+           ticks: TICK, grid: { color: GRID } }
+    }
+  };
+}
+
+/* Payoff / P&L diagram — shared by BS and Binomial */
+function drawPayoff(S, K, cPrem, pPrem, canvasId, showBoth, type) {
+  var lo = S * 0.6, hi = S * 1.4, n = 100;
+  var labels = [], ds = [];
+
+  if (showBoth) {
+    /* BS: show all 4 lines */
+    var cp=[], pp=[], cn=[], pn=[];
+    for (var i=0; i<=n; i++) {
+      var st = lo + (hi-lo)*i/n;
+      labels.push(st.toFixed(0));
+      cp.push(Math.max(st-K,0)); pp.push(Math.max(K-st,0));
+      cn.push(Math.max(st-K,0) - cPrem);
+      pn.push(Math.max(K-st,0) - pPrem);
+    }
+    ds = [
+      { data:cp, borderColor:'#4f91f5', borderWidth:2,   pointRadius:0, tension:.1 },
+      { data:pp, borderColor:'#f87171', borderWidth:2,   pointRadius:0, tension:.1 },
+      { data:cn, borderColor:'#34d399', borderWidth:1.5, borderDash:[5,4], pointRadius:0, tension:.1 },
+      { data:pn, borderColor:'#fbbf24', borderWidth:1.5, borderDash:[5,4], pointRadius:0, tension:.1 }
+    ];
+  } else {
+    /* Binomial: single option type */
+    var pay=[], pnl=[];
+    for (var i=0; i<=n; i++) {
+      var st = lo + (hi-lo)*i/n;
+      labels.push(st.toFixed(0));
+      var p2 = type==='call' ? Math.max(st-K,0) : Math.max(K-st,0);
+      pay.push(p2); pnl.push(p2 - cPrem);
+    }
+    ds = [
+      { data:pay, borderColor:'#4f91f5', borderWidth:2,   pointRadius:0, tension:.1,
+        fill: { target:'origin', above:'rgba(79,145,245,.07)' } },
+      { data:pnl, borderColor:'#34d399', borderWidth:1.5, borderDash:[5,4], pointRadius:0, tension:.1 }
+    ];
+  }
+
+  destroyChart(canvasId);
+  CHARTS[canvasId] = new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: { labels: labels, datasets: ds },
+    options: baseOpts('Underlying at expiry', 'Profit / Loss')
+  });
+}
+
+function drawSens(K, sig, r, q, T) {
+  var lo=K*0.55, hi=K*1.45, n=80, labels=[], cp=[], pp=[];
+  for (var i=0; i<=n; i++) {
+    var S = lo+(hi-lo)*i/n;
+    labels.push(S.toFixed(0));
+    var sqT=Math.sqrt(T), d1=(Math.log(S/K)+(r-q+.5*sig*sig)*T)/(sig*sqT), d2=d1-sig*sqT;
+    cp.push(S*Math.exp(-q*T)*Phi(d1)-K*Math.exp(-r*T)*Phi(d2));
+    pp.push(K*Math.exp(-r*T)*Phi(-d2)-S*Math.exp(-q*T)*Phi(-d1));
+  }
+  destroyChart('sensChart');
+  CHARTS['sensChart'] = new Chart(document.getElementById('sensChart'), {
+    type: 'line',
+    data: { labels: labels, datasets: [
+      { data:cp, borderColor:'#4f91f5', borderWidth:2, pointRadius:0, tension:.2,
+        fill:{target:'origin',above:'rgba(79,145,245,.07)'} },
+      { data:pp, borderColor:'#f87171', borderWidth:2, pointRadius:0, tension:.2,
+        fill:{target:'origin',above:'rgba(248,113,113,.07)'} }
+    ]},
+    options: baseOpts('Spot price', 'Premium value')
+  });
+}
+
+function drawConv(S, K, T, r, q, u, d, Ns, style, type, bs0) {
+  var steps = [1,2,5,10,20,30,50,75,100,150,200];
+  var prices = steps.map(function(n) {
+    var res = binCRR(S,K,T,r,q,n,u,d,style,type);
+    return res ? res.price : null;
+  });
+  destroyChart('convChart');
+  CHARTS['convChart'] = new Chart(document.getElementById('convChart'), {
+    type: 'line',
+    data: { labels: steps, datasets: [
+      { data: prices, borderColor:'#4f91f5', borderWidth:1.8,
+        pointRadius:3, pointBackgroundColor:'#4f91f5', tension:.3 },
+      { data: steps.map(function(){ return bs0; }),
+        borderColor:'#34d399', borderWidth:1.2, borderDash:[4,3], pointRadius:0 }
+    ]},
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: { legend:{display:false}, tooltip: {
+        backgroundColor:TOOLTIP.backgroundColor,
+        borderColor:TOOLTIP.borderColor, borderWidth:1,
+        titleFont:TOOLTIP.titleFont, bodyFont:TOOLTIP.bodyFont, padding:10,
+        callbacks: { label: function(c) {
+          return (c.datasetIndex===0 ? 'Binomial: ' : 'BS ref:   ') +
+                 (c.parsed.y != null ? c.parsed.y.toFixed(4) : 'n/a');
+        }}
+      }},
+      scales: {
+        x: { title:{display:true,text:'Steps N',color:'#7a90b0',font:{size:12}},
+             ticks:TICK, grid:{color:GRID} },
+        y: { ticks:TICK, grid:{color:GRID} }
+      }
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   SVG BINOMIAL TREE
+   Layout: nodes centred vertically at each step.
+   Each node shows: stock price / option value (divided by line).
+   Branches labelled with risk-neutral probabilities.
+   ITM nodes highlighted with blue border.
+   Step labels at top.
+══════════════════════════════════════════════════════════ */
+function drawSVGTree(S, K, T, r, q, Ns, u, d, style, type, p) {
+  var svg = document.getElementById('bin-svg-tree');
+  if (!svg) return;
+
+  var steps = Math.min(6, Ns);   /* cap at 6 for readability */
+  var nodeR = 30;
+  var colW  = 162;
+  var rowH  = 76;
+  var padX  = 56;
+  var padTop = 36;               /* room for step labels above */
+  var padBot = 20;
+  var svgW   = padX * 2 + colW * steps;
+  var svgH   = padTop + rowH * steps + padBot;
+
+  svg.setAttribute('width',   svgW);
+  svg.setAttribute('height',  svgH);
+  svg.setAttribute('viewBox', '0 0 ' + svgW + ' ' + svgH);
+  svg.innerHTML = '';
+
+  var NS = 'http://www.w3.org/2000/svg';
+
+  /* ── Pre-compute all stock prices ── */
+  var stockPx = [], optVal = [];
+  for (var j=0; j<=steps; j++) {
+    stockPx[j] = []; optVal[j] = [];
+    for (var i=0; i<=j; i++)
+      stockPx[j][i] = S * Math.pow(u, j-i) * Math.pow(d, i);
+  }
+
+  /* ── Terminal option values ── */
+  for (var i=0; i<=steps; i++) {
+    optVal[steps][i] = type === 'call'
+      ? Math.max(stockPx[steps][i] - K, 0)
+      : Math.max(K - stockPx[steps][i], 0);
+  }
+
+  /* ── Backward induction ── */
+  var disc = Math.exp(-r * (T / Ns));
+  for (var j=steps-1; j>=0; j--) {
+    for (var i=0; i<=j; i++) {
+      var hold = disc * (p * optVal[j+1][i] + (1-p) * optVal[j+1][i+1]);
+      if (style === 'american') {
+        var ex = type === 'call'
+          ? Math.max(stockPx[j][i] - K, 0)
+          : Math.max(K - stockPx[j][i], 0);
+        optVal[j][i] = Math.max(hold, ex);
+      } else {
+        optVal[j][i] = hold;
+      }
+    }
+  }
+
+  /* ── Node coordinates ── */
+  function cx(j)    { return padX + j * colW; }
+  function cy(j, i) {
+    var totalH = j * rowH;
+    var topY   = padTop + (steps * rowH - totalH) / 2;
+    return topY + i * rowH;
+  }
+
+  /* ── Helper: create SVG element ── */
+  function el(tag, attrs) {
+    var e = document.createElementNS(NS, tag);
+    Object.keys(attrs).forEach(function(k) { e.setAttribute(k, attrs[k]); });
+    return e;
+  }
+  function txt(text, attrs, cls) {
+    var e = document.createElementNS(NS, 'text');
+    Object.keys(attrs).forEach(function(k) { e.setAttribute(k, attrs[k]); });
+    if (cls) e.setAttribute('class', cls);
+    e.textContent = text;
+    return e;
+  }
+
+  /* ── Draw branches first (behind nodes) ── */
+  for (var j=0; j<steps; j++) {
+    for (var i=0; i<=j; i++) {
+      var x1=cx(j), y1=cy(j,i), x2u=cx(j+1), y2u=cy(j+1,i), x2d=cx(j+1), y2d=cy(j+1,i+1);
+
+      svg.appendChild(el('line', {x1:x1,y1:y1,x2:x2u,y2:y2u,class:'branch-up'}));
+      svg.appendChild(el('line', {x1:x1,y1:y1,x2:x2d,y2:y2d,class:'branch-dn'}));
+
+      /* Probability labels at midpoints */
+      var mxU=(x1+x2u)/2, myU=(y1+y2u)/2 - 8;
+      var mxD=(x1+x2d)/2, myD=(y1+y2d)/2 + 14;
+      svg.appendChild(txt('p = '+p.toFixed(3),   {'x':mxU,'y':myU,'text-anchor':'middle'}, 'prob-label'));
+      svg.appendChild(txt('1−p = '+(1-p).toFixed(3), {'x':mxD,'y':myD,'text-anchor':'middle'}, 'prob-label'));
+    }
+  }
+
+  /* ── Draw nodes ── */
+  for (var j=0; j<=steps; j++) {
+    for (var i=0; i<=j; i++) {
+      var x=cx(j), y=cy(j,i);
+      var sp=stockPx[j][i], ov=optVal[j][i];
+      var itm = type==='call' ? sp > K : sp < K;
+
+      /* Circle */
+      svg.appendChild(el('circle', {
+        cx:x, cy:y, r:nodeR,
+        fill: '#1c2435',
+        stroke: itm ? '#4f91f5' : '#2a3549',
+        'stroke-width': itm ? '2' : '1.2'
+      }));
+
+      /* Stock price (top half) */
+      svg.appendChild(txt(sp.toFixed(1), {'x':x,'y':y-7,'text-anchor':'middle'}, 'node-stock'));
+
+      /* Divider */
+      svg.appendChild(el('line', {
+        x1:x-nodeR+7, y1:y, x2:x+nodeR-7, y2:y,
+        stroke:'#2a3549', 'stroke-width':'0.8'
+      }));
+
+      /* Option value (bottom half) */
+      svg.appendChild(txt(ov.toFixed(2), {'x':x,'y':y+14,'text-anchor':'middle'}, 'node-option'));
+    }
+
+    /* Step label at top of each column */
+    svg.appendChild(txt(
+      j === 0 ? 'Now' : 'Step ' + j,
+      { x: cx(j), y: padTop - 10, 'text-anchor': 'middle' },
+      'step-label'
+    ));
+  }
+}
+
+/* ── Boot ── */
+calcBS();
+</script>
+</body>
+</html>
