@@ -3,339 +3,404 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OptionPricer — Black-Scholes & Binomial CRR Calculator</title>
-<meta name="description" content="Professional option pricing calculator using Black-Scholes and Cox-Ross-Rubinstein Binomial models. Real-time Greeks, payoff diagrams, and tree visualisation.">
+<title>OptionPricer — Free Options Pricing Calculator | Black-Scholes & Binomial CRR</title>
+<meta name="description" content="Free professional options pricing calculator. Compute call & put prices, Greeks (delta, gamma, theta, vega, rho), payoff diagrams, and binomial trees using Black-Scholes and CRR models. Real-time, no sign-up required.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 /* ── Reset ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-/* ── Design tokens ── */
-:root {
-  --bg:      #0d1117;
-  --card:    #161c27;
-  --field:   #1c2435;
-  --field2:  #212c40;
-  --border:  #2a3549;
-  --border2: #3a4d68;
-  --text:    #e2e8f4;
-  --text2:   #94a3bc;
-  --text3:   #5c6f88;
-  --blue:    #4f91f5;
-  --green:   #34d399;
-  --red:     #f87171;
-  --amber:   #fbbf24;
-  --sans:    'Inter', sans-serif;
-  --mono:    'JetBrains Mono', monospace;
-}
+/* ════════════════════════════════════════
+   DESIGN TOKENS
+════════════════════════════════════════ */
+:root{
+  --bg:     #07090f;
+  --s1:     #0d1218;
+  --s2:     #111827;
+  --s3:     #162035;
+  --s4:     #1c2a40;
 
-html { scroll-behavior: smooth; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 14px;
-  line-height: 1.6;
-  min-height: 100vh;
-}
-.wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px 80px; }
+  --b1:     rgba(255,255,255,.055);
+  --b2:     rgba(255,255,255,.09);
+  --b3:     rgba(255,255,255,.14);
 
-/* ── Sticky header: brand + model tabs ── */
-.sticky-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 28px;
-}
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 13px 0 11px;
-  cursor: pointer;
-  user-select: none;
-  border-bottom: 1px solid var(--border);
-  transition: opacity .15s;
-}
-.topbar:hover { opacity: .75; }
-.brand-name {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -.02em;
-  color: var(--text);
-}
-.brand-name em { font-style: normal; color: var(--blue); }
-.topbar-sep {
-  display: inline-block;
-  width: 1px; height: 14px;
-  background: var(--border2);
-  margin: 0 14px;
-  vertical-align: middle;
-}
-.topbar-sub {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--text2);
-  letter-spacing: -.01em;
+  --t1:     #f0f4ff;
+  --t2:     #9aafd0;
+  --t3:     #5c7a9a;
+
+  --accent: #4080f0;
+  --pos:    #36c47a;
+  --neg:    #d95368;
+  --warn:   #c28830;
+
+  --sans: 'Inter', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+
+  --radius: 10px;
+  --radius-sm: 7px;
 }
 
-/* ── Model tabs ── */
-.tabs { display: flex; }
-.tab {
-  padding: 10px 22px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text2);
-  cursor: pointer;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  transition: color .15s, border-color .15s;
-  letter-spacing: -.01em;
+/* ════════════════════════════════════════
+   BASE
+════════════════════════════════════════ */
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--t1);
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.7;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
 }
-.tab:hover { color: var(--text2); }
-.tab.on { color: var(--text); border-bottom-color: var(--blue); }
+.wrap{max-width:1100px;margin:0 auto;padding:0 32px 100px}
 
-/* ── Panels ── */
-.panel { display: none; }
-.panel.on { display: block; }
+/* ════════════════════════════════════════
+   STICKY HEADER
+════════════════════════════════════════ */
+.sticky-header{
+  position:sticky;top:0;z-index:200;
+  background:rgba(7,9,15,.88);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--b1);
+  margin-bottom:32px;
+}
+.topbar{
+  display:flex;align-items:center;justify-content:center;gap:0;
+  padding:15px 0 13px;
+  cursor:pointer;user-select:none;
+  border-bottom:1px solid var(--b1);
+  transition:opacity .2s;
+}
+.topbar:hover{opacity:.65}
+.brand-name{
+  font-size:16px;font-weight:600;letter-spacing:-.03em;color:var(--t1);
+}
+.brand-name em{font-style:normal;color:var(--accent)}
+.topbar-sep{
+  display:inline-block;width:1px;height:13px;
+  background:var(--b2);margin:0 16px;vertical-align:middle;flex-shrink:0;
+}
+.topbar-sub{font-size:12.5px;font-weight:400;color:var(--t2);letter-spacing:.01em}
 
-/* ── Two-column layout ── */
-.two-col {
-  display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 16px;
-  align-items: start;
+/* ════════════════════════════════════════
+   MODEL TABS
+════════════════════════════════════════ */
+.tabs{display:flex;padding:0 2px}
+.tab{
+  padding:12px 28px;font-size:13px;font-weight:500;color:var(--t2);
+  cursor:pointer;background:none;border:none;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:color .18s,border-color .18s;letter-spacing:.01em;
 }
-@media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+.tab:hover{color:var(--t1)}
+.tab.on{color:var(--t1);border-bottom-color:var(--accent)}
 
-/* ── Cards ── */
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 20px 22px;
+/* ════════════════════════════════════════
+   PANELS & LAYOUT
+════════════════════════════════════════ */
+.panel{display:none}.panel.on{display:block}
+.two-col{
+  display:grid;
+  grid-template-columns:370px 1fr;
+  gap:16px;
+  align-items:start;
 }
-.card-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .09em;
-  color: var(--text);
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
+@media(max-width:820px){.two-col{grid-template-columns:1fr}}
+
+/* ════════════════════════════════════════
+   CARDS
+════════════════════════════════════════ */
+.card{
+  background:var(--s1);
+  border:1px solid var(--b1);
+  border-radius:var(--radius);
+  padding:22px 24px;
+}
+.card-title{
+  font-size:10.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;
+  color:var(--t2);
+  margin-bottom:20px;padding-bottom:13px;
+  border-bottom:1px solid var(--b1);
 }
 
-/* ── Form elements ── */
-.field { margin-bottom: 14px; }
-.field:last-child { margin-bottom: 0; }
-.label {
-  display: block;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text);
-  margin-bottom: 5px;
-  letter-spacing: .01em;
+/* ════════════════════════════════════════
+   FORM ELEMENTS
+════════════════════════════════════════ */
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.label{
+  display:block;font-size:12px;font-weight:500;
+  color:var(--t1);margin-bottom:6px;letter-spacing:.01em;
 }
-.label small { font-weight: 400; color: var(--text3); font-size: 11px; }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.field-hint { font-size: 11.5px; color: var(--text2); margin-top: 5px; line-height: 1.5; }
+.label small{font-weight:400;color:var(--t2);font-size:11px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-hint{
+  font-size:11px;color:var(--t2);margin-top:5px;line-height:1.55;
+}
 
 input[type=number],
-input[type=datetime-local],
-select {
-  width: 100%;
-  padding: 9px 11px;
-  background: var(--field);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 13px;
-  outline: none;
-  transition: border-color .15s, background .15s;
+input[type=date],
+select{
+  width:100%;padding:10px 13px;
+  background:var(--s2);
+  border:1px solid var(--b1);
+  border-radius:var(--radius-sm);
+  color:var(--t1);
+  font-family:var(--mono);font-size:13.5px;
+  outline:none;
+  transition:border-color .15s,background .15s,box-shadow .15s;
+  -webkit-appearance:none;
 }
-input[type=number]::placeholder {
-  color: var(--text3);
-  font-family: var(--sans);
-  font-size: 12.5px;
+input[type=number]::placeholder{
+  color:var(--t3);font-family:var(--sans);font-size:12.5px;
 }
-input[type=number]:hover,
-input[type=datetime-local]:hover,
-select:hover { border-color: var(--border2); }
-input[type=number]:focus,
-input[type=datetime-local]:focus,
-select:focus { border-color: var(--blue); background: var(--field2); outline: none; }
+input[type=number]:hover,input[type=date]:hover,select:hover{
+  border-color:var(--b2);
+}
+input[type=number]:focus,input[type=date]:focus,select:focus{
+  border-color:rgba(64,128,240,.5);
+  background:var(--s3);
+  box-shadow:0 0 0 3px rgba(64,128,240,.08);
+  outline:none;
+}
 
-/* Spinner arrows: hidden at rest, appear on hover/focus */
+/* Spinners */
 input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
-  -webkit-appearance: inner-spin-button;
-  opacity: 0;
-  height: 28px;
-  cursor: pointer;
-  transition: opacity .15s;
+input[type=number]::-webkit-outer-spin-button{
+  -webkit-appearance:inner-spin-button;
+  opacity:0;height:28px;cursor:pointer;transition:opacity .15s;
 }
 input[type=number]:hover::-webkit-inner-spin-button,
 input[type=number]:hover::-webkit-outer-spin-button,
 input[type=number]:focus::-webkit-inner-spin-button,
-input[type=number]:focus::-webkit-outer-spin-button { opacity: .6; }
+input[type=number]:focus::-webkit-outer-spin-button{opacity:.45}
 
-/* Select */
-select {
-  -webkit-appearance: none;
-  appearance: none;
-  cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%235c6f88' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 11px center;
-  padding-right: 32px;
+/* Select arrow */
+select{
+  appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%235c7a9a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;
 }
-select option { background: #1c2435; color: #e2e8f4; }
+select option{background:#111827;color:#f0f4ff}
 
-/* Datetime picker */
-input[type=datetime-local] { cursor: pointer; }
-input[type=datetime-local]::-webkit-datetime-edit { color: var(--text); }
-input[type=datetime-local]::-webkit-datetime-edit-text { color: var(--text3); }
-input[type=datetime-local]::-webkit-datetime-edit-year-field,
-input[type=datetime-local]::-webkit-datetime-edit-month-field,
-input[type=datetime-local]::-webkit-datetime-edit-day-field,
-input[type=datetime-local]::-webkit-datetime-edit-hour-field,
-input[type=datetime-local]::-webkit-datetime-edit-minute-field {
-  color: var(--text); border-radius: 2px; padding: 1px 2px;
+/* Date picker */
+input[type=date]{cursor:pointer;padding-right:10px}
+input[type=date]::-webkit-datetime-edit{color:var(--t1)}
+input[type=date]::-webkit-datetime-edit-text{color:var(--t2)}
+input[type=date]::-webkit-datetime-edit-year-field,
+input[type=date]::-webkit-datetime-edit-month-field,
+input[type=date]::-webkit-datetime-edit-day-field{
+  color:var(--t1);border-radius:2px;padding:1px 2px;
 }
-input[type=datetime-local]::-webkit-datetime-edit-year-field:focus,
-input[type=datetime-local]::-webkit-datetime-edit-month-field:focus,
-input[type=datetime-local]::-webkit-datetime-edit-day-field:focus,
-input[type=datetime-local]::-webkit-datetime-edit-hour-field:focus,
-input[type=datetime-local]::-webkit-datetime-edit-minute-field:focus {
-  background: rgba(79,145,245,.22); color: #fff; outline: none;
+input[type=date]::-webkit-datetime-edit-year-field:focus,
+input[type=date]::-webkit-datetime-edit-month-field:focus,
+input[type=date]::-webkit-datetime-edit-day-field:focus{
+  background:rgba(64,128,240,.2);color:#fff;outline:none;
 }
-input[type=datetime-local]::-webkit-calendar-picker-indicator {
-  background: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234f91f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: center;
-  width: 16px; height: 16px; cursor: pointer; opacity: .7; transition: opacity .15s;
+input[type=date]::-webkit-calendar-picker-indicator{
+  background:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234080f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:center;
+  width:16px;height:16px;cursor:pointer;opacity:.55;transition:opacity .15s;
 }
-input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+input[type=date]::-webkit-calendar-picker-indicator:hover{opacity:.9}
 
-/* Expiry two-column layout */
-.expiry-row { display: flex; align-items: flex-start; gap: 0; }
-.expiry-half { flex: 1; min-width: 0; }
-.expiry-sep {
-  padding: 26px 10px 0; flex-shrink: 0;
-  font-size: 10px; font-weight: 700; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--text3);
+/* ════════════════════════════════════════
+   EXPIRY ROW
+════════════════════════════════════════ */
+.expiry-row{display:flex;align-items:flex-start;gap:0}
+.expiry-half{flex:1;min-width:0}
+.expiry-sep{
+  padding:24px 10px 0;flex-shrink:0;
+  font-size:10px;font-weight:500;color:var(--t2);letter-spacing:.04em;
 }
-.expiry-sub {
-  display: block; font-size: 11px; font-weight: 600;
-  letter-spacing: .05em; text-transform: uppercase;
-  color: var(--text2); margin-bottom: 5px;
+.expiry-sub{
+  display:block;font-size:10px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  color:var(--t2);margin-bottom:5px;
 }
-.t-badge {
-  display: none; margin-top: 5px; padding: 4px 9px;
-  background: rgba(79,145,245,.1); border: 1px solid rgba(79,145,245,.2);
-  border-radius: 5px; font-size: 11px; font-family: var(--mono); color: var(--blue);
+.t-badge{
+  display:none;margin-top:6px;padding:4px 9px;
+  background:rgba(64,128,240,.09);border:1px solid rgba(64,128,240,.22);
+  border-radius:5px;font-size:11.5px;font-family:var(--mono);color:var(--accent);
+  line-height:1.4;
 }
-.t-badge.show { display: inline-block; }
-.t-badge.past { background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.25); color: var(--red); }
+.t-badge.show{display:inline-block}
+.t-badge.past{
+  background:rgba(217,83,104,.07);border-color:rgba(217,83,104,.2);color:var(--neg);
+}
 
-/* Section divider */
-.rule {
-  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
-  color: var(--text);
-  display: flex; align-items: center; gap: 10px;
-  margin: 20px 0 14px;
+/* ════════════════════════════════════════
+   SECTION RULE
+════════════════════════════════════════ */
+.rule{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--t2);
+  display:flex;align-items:center;gap:12px;
+  margin:20px 0 14px;
 }
-.rule::before, .rule::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.rule::before,.rule::after{content:'';flex:1;height:1px;background:var(--b1)}
 
-/* ── Result boxes ── */
-.res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-.res-3    { grid-template-columns: 1fr 1fr 1fr; }
-.res-box  {
-  background: var(--field);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 14px 15px;
+/* ════════════════════════════════════════
+   RESULT BOXES
+════════════════════════════════════════ */
+.res-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:10px;margin-bottom:14px;
 }
-.res-box.accent-grn { border-top: 2px solid var(--green); }
-.res-box.accent-red { border-top: 2px solid var(--red); }
-.res-box.accent-blu { border-top: 2px solid var(--blue); }
-.res-box.accent-amb { border-top: 2px solid var(--amber); }
-.res-name {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .07em; color: var(--text2); margin-bottom: 5px;
+.res-box{
+  background:var(--s2);
+  border:1px solid var(--b1);
+  border-radius:var(--radius-sm);
+  padding:14px 16px;
+  position:relative;overflow:hidden;
 }
-.res-val {
-  font-family: var(--mono); font-size: 20px; font-weight: 500;
-  color: var(--text); line-height: 1.2;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.res-val.grn { color: var(--green); }
-.res-val.red { color: var(--red); }
-.res-val.blu { color: var(--blue); }
-.res-val.amb { color: var(--amber); }
-.res-note { font-size: 11.5px; color: var(--text2); margin-top: 4px; line-height: 1.4; }
+/* Accent bar — left edge */
+.res-box.accent-grn{border-left:2px solid var(--pos)}
+.res-box.accent-red{border-left:2px solid var(--neg)}
+.res-box.accent-blu{border-left:2px solid var(--accent)}
+.res-box.accent-amb{border-left:2px solid var(--warn)}
 
-/* ── Greeks ── */
-.gk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.gk {
-  background: var(--field); border: 1px solid var(--border);
-  border-radius: 6px; padding: 10px 12px;
+.res-name{
+  font-size:10px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--t2);margin-bottom:7px;
 }
-.gk-name {
-  font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .05em; color: var(--text); margin-bottom: 5px;
+.res-name-sym{
+  font-size:15px;font-weight:600;text-transform:none;
+  letter-spacing:0;color:var(--t1);
 }
-.gk-val { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--text); }
-.gk-val.pos { color: var(--blue); }
-.gk-val.neg { color: var(--red); }
+.res-val-sm{font-size:18px!important}
+.res-val{
+  font-family:var(--mono);font-size:26px;font-weight:500;
+  color:var(--t1);line-height:1.1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.res-val.grn{color:var(--pos)}
+.res-val.red{color:var(--neg)}
+.res-val.blu{color:var(--t1)}
+.res-val.amb{color:var(--t1)}
+.res-note{font-size:11.5px;color:var(--t2);margin-top:4px;line-height:1.4}
 
-/* ── Charts ── */
-.chart-block {
-  margin-top: 16px;
-  opacity: 0; max-height: 0; overflow: hidden; pointer-events: none;
-  transition: opacity .4s ease, max-height .55s ease;
+/* ════════════════════════════════════════
+   GREEKS GRID
+════════════════════════════════════════ */
+.gk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gk{
+  background:var(--s2);border:1px solid var(--b1);
+  border-radius:var(--radius-sm);padding:11px 13px;
 }
-.chart-block.show { opacity: 1; max-height: 3000px; overflow: visible; pointer-events: auto; }
-.chart-hd {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .08em; color: var(--text);
-  margin-bottom: 14px; padding-bottom: 11px; border-bottom: 1px solid var(--border);
+.gk-name{
+  font-size:10px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--t2);margin-bottom:5px;
 }
-.leg  { display: flex; gap: 18px; margin-bottom: 12px; flex-wrap: wrap; }
-.li   { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text); }
-.lsq  { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-.lcir { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.llin { width: 26px; height: 2px; flex-shrink: 0; opacity: .6; }
-
-/* ── SVG Tree ── */
-.node-stock  { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 500; fill: #e2e8f4; }
-.node-option { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 500; fill: #34d399; }
-.prob-label  { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 500; fill: #7a90b0; }
-.step-label  { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; fill: #5c6f88; }
-.branch-up   { stroke: rgba(79,145,245,.45);  stroke-width: 1.5; fill: none; }
-.branch-dn   { stroke: rgba(248,113,113,.35); stroke-width: 1.5; fill: none; }
-
-/* ── Disclaimer ── */
-.disclaimer {
-  margin-top: 40px; padding: 14px 18px; border-radius: 8px;
-  background: rgba(251,191,36,.05); border: 1px solid rgba(251,191,36,.15);
-  font-size: 12.5px; color: var(--text2); line-height: 1.7;
+.gk-val{
+  font-family:var(--mono);font-size:14.5px;font-weight:500;color:var(--t1);
 }
-.disclaimer strong { color: var(--text); font-weight: 500; }
+.gk-val.pos{color:var(--accent)}
+.gk-val.neg{color:var(--neg)}
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--field2); border-radius: 2px; }
+/* ════════════════════════════════════════
+   HEDGE ROW
+════════════════════════════════════════ */
+.hedge-row{
+  display:none;
+  margin-top:12px;padding:12px 14px;
+  background:var(--s2);
+  border:1px solid var(--b1);border-left:2px solid var(--accent);
+  border-radius:var(--radius-sm);
+  line-height:1.6;
+}
+.hedge-row.show{display:block}
+.hedge-label{
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.09em;color:var(--t2);display:block;margin-bottom:5px;
+}
+.hedge-val{font-family:var(--mono);font-size:13.5px;color:var(--t1)}
+
+/* ════════════════════════════════════════
+   BREAKEVEN CARDS
+════════════════════════════════════════ */
+.be-card{
+  display:none;
+  border-radius:var(--radius-sm);padding:12px 15px;margin-bottom:10px;
+  border:1px solid;
+}
+.be-card.pos-card{
+  background:rgba(54,196,122,.04);
+  border-color:rgba(54,196,122,.18);
+  border-left:2px solid var(--pos);
+}
+.be-card.warn-card{
+  background:rgba(194,136,48,.04);
+  border-color:rgba(194,136,48,.18);
+  border-left:2px solid var(--warn);
+}
+.be-card-label{
+  font-size:10px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--t2);margin-bottom:6px;
+}
+.be-card-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.be-val{font-family:var(--mono);font-size:23px;font-weight:500;color:var(--t1)}
+.be-formula{font-size:11.5px;color:var(--t2);font-family:var(--mono)}
+.be-note{font-size:11.5px;color:var(--t2);margin-top:4px}
+.be-note strong{color:var(--t1);font-weight:600}
+.be-card.show{display:block}
+
+/* ════════════════════════════════════════
+   CHARTS
+════════════════════════════════════════ */
+.chart-block{
+  margin-top:14px;
+  opacity:0;max-height:0;overflow:hidden;pointer-events:none;
+  transition:opacity .4s ease,max-height .6s ease;
+}
+.chart-block.show{
+  opacity:1;max-height:4000px;overflow:visible;pointer-events:auto;
+}
+.chart-hd{
+  font-size:10.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.09em;color:var(--t2);
+  margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--b1);
+}
+.leg{display:flex;gap:18px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.li{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--t1)}
+.lsq{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.lcir{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.llin{width:22px;height:2px;flex-shrink:0;opacity:.55}
+
+/* ════════════════════════════════════════
+   SVG TREE
+════════════════════════════════════════ */
+.node-stock {font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:500;fill:#f0f4ff}
+.node-option{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;fill:#36c47a}
+.prob-label {font-family:'Inter',sans-serif;font-size:9px;font-weight:500;fill:#5c7a9a}
+.step-label {font-family:'Inter',sans-serif;font-size:11px;font-weight:600;fill:#7a9ab8;letter-spacing:.02em}
+.branch-up  {stroke:rgba(64,128,240,.38);stroke-width:1.3;fill:none}
+.branch-dn  {stroke:rgba(217,83,104,.28);stroke-width:1.3;fill:none}
+
+/* ════════════════════════════════════════
+   MISC
+════════════════════════════════════════ */
+.res-sub-accent{font-size:9px;color:var(--accent);vertical-align:sub}
+.res-sub-warn  {font-size:9px;color:var(--warn);vertical-align:sub}
+
+.disclaimer{
+  margin-top:40px;padding:14px 18px;border-radius:var(--radius-sm);
+  background:rgba(64,128,240,.03);border:1px solid var(--b1);
+  font-size:12.5px;color:var(--t2);line-height:1.75;
+}
+.disclaimer strong{color:var(--t1);font-weight:500}
+
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--s4);border-radius:2px}
 </style>
 </head>
 <body>
@@ -346,11 +411,11 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
     <nav class="topbar" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">
       <span class="brand-name">Option<em>Pricer</em></span>
       <span class="topbar-sep"></span>
-      <span class="topbar-sub">Option Pricing Calculator</span>
+      <span class="topbar-sub">Black-Scholes &amp; Binomial CRR</span>
     </nav>
-    <div class="tabs">
-      <button class="tab on" onclick="switchTab('bs',this)">Black-Scholes</button>
-      <button class="tab"    onclick="switchTab('bin',this)">Binomial Tree (CRR)</button>
+    <div class="tabs" role="tablist" aria-label="Pricing model">
+      <button class="tab on" role="tab" aria-selected="true" onclick="switchTab('bs',this)">Black-Scholes</button>
+      <button class="tab" role="tab" aria-selected="false" onclick="switchTab('bin',this)">Binomial Tree (CRR)</button>
     </div>
   </div>
 
@@ -387,13 +452,13 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
           <div class="expiry-row">
             <div class="expiry-half">
               <span class="expiry-sub">Years (T)</span>
-              <input type="number" id="bs-T" placeholder="0.5" step="0.0001" min="0.0001" oninput="calcBS()">
-              <div class="field-hint">0.25 = 3 mo &nbsp;·&nbsp; 0.5 = 6 mo &nbsp;·&nbsp; 1 = 1 yr</div>
+              <input type="number" id="bs-T" placeholder="e.g. 0.5" step="0.0001" min="0.0001" oninput="calcBS()">
+              <div class="field-hint">0.0833 = 1 mo &nbsp;·&nbsp; 0.25 = 3 mo &nbsp;·&nbsp; 0.5 = 6 mo &nbsp;·&nbsp; 1 = 1 yr</div>
             </div>
             <div class="expiry-sep">or</div>
             <div class="expiry-half">
               <span class="expiry-sub">Pick a date</span>
-              <input type="datetime-local" id="bs-expiry" oninput="onDatePick()">
+              <input type="date" id="bs-expiry" oninput="onDatePick()">
               <div class="t-badge" id="bs-t-badge"></div>
             </div>
           </div>
@@ -402,69 +467,93 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
         <div class="field-row">
           <div class="field">
             <label class="label">Volatility σ <small>(%)</small></label>
-            <input type="number" id="bs-vol" placeholder="e.g. 28" step="0.5" min="0" oninput="calcBS()">
+            <input type="number" id="bs-vol" placeholder="e.g. 25" step="0.5" min="0" oninput="calcBS()">
           </div>
           <div class="field">
             <label class="label">Risk-free rate r <small>(%)</small></label>
-            <input type="number" id="bs-r" placeholder="e.g. 8" step="0.5" oninput="calcBS()">
+            <input type="number" id="bs-r" placeholder="e.g. 7" step="0.5" oninput="calcBS()">
           </div>
         </div>
 
         <div class="field">
-          <label class="label">Dividend yield q <small>(% — use 0 if none)</small></label>
-          <input type="number" id="bs-q" value="0" step="0.5" min="0" oninput="calcBS()">
+          <label class="label">Dividend yield q <small>(% — leave 0 for non-dividend stocks)</small></label>
+          <input type="number" id="bs-q" placeholder="e.g. 0" step="0.5" min="0" oninput="calcBS()">
         </div>
       </div>
 
       <!-- Results -->
       <div class="card">
         <div class="card-title">Pricing Output</div>
-        <div class="res-grid">
-          <div class="res-box accent-grn">
-            <div class="res-name">Call premium</div>
+        <!-- Premium boxes: shown/hidden based on option type -->
+        <div class="res-grid" id="bs-prem-grid">
+          <div class="res-box accent-grn" id="box-call">
+            <div class="res-name" style="display:flex;justify-content:space-between;align-items:center">Call premium<span id="bs-call-money" style="font-size:9px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:3px;display:none"></span></div>
             <div class="res-val grn" id="r-call">—</div>
-            <div class="res-note">Theoretical fair value</div>
+            <div class="res-note">BSM theoretical price</div>
           </div>
-          <div class="res-box accent-red">
-            <div class="res-name">Put premium</div>
+          <div class="res-box accent-red" id="box-put">
+            <div class="res-name" style="display:flex;justify-content:space-between;align-items:center">Put premium<span id="bs-put-money" style="font-size:9px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:3px;display:none"></span></div>
             <div class="res-val red" id="r-put">—</div>
-            <div class="res-note">Theoretical fair value</div>
+            <div class="res-note">BSM theoretical price</div>
           </div>
           <div class="res-box">
-            <div class="res-name" style="font-size:13px;text-transform:none;letter-spacing:0;font-weight:600;color:var(--text)">d<sub style="font-size:10px;color:var(--blue)">1</sub></div>
-            <div class="res-val blu" id="r-d1">—</div>
-            <div class="res-note">[ln(S/K) + (r + σ²/2)T] / σ√T</div>
+            <div class="res-name res-name-sym">d<sub class="res-sub-accent">1</sub></div>
+            <div class="res-val blu res-val-sm" id="r-d1">—</div>
+            <div class="res-note">N(d₁) = <span id="r-nd1">—</span></div>
           </div>
           <div class="res-box">
-            <div class="res-name" style="font-size:13px;text-transform:none;letter-spacing:0;font-weight:600;color:var(--text)">d<sub style="font-size:10px;color:var(--amber)">2</sub></div>
-            <div class="res-val amb" id="r-d2">—</div>
-            <div class="res-note">d<sub>1</sub> − σ√T</div>
+            <div class="res-name res-name-sym">d<sub class="res-sub-warn">2</sub></div>
+            <div class="res-val amb res-val-sm" id="r-d2">—</div>
+            <div class="res-note">N(d₂) = <span id="r-nd2">—</span></div>
           </div>
         </div>
 
         <div class="rule">Option Greeks</div>
-        <div class="gk-grid">
-          <div class="gk"><div class="gk-name">Δ Call delta</div><div class="gk-val pos" id="g-cd">—</div></div>
-          <div class="gk"><div class="gk-name">Δ Put delta</div><div class="gk-val neg" id="g-pd">—</div></div>
-          <div class="gk"><div class="gk-name">Γ Gamma</div><div class="gk-val" id="g-gm">—</div></div>
-          <div class="gk"><div class="gk-name">Θ Call / day</div><div class="gk-val neg" id="g-ct">—</div></div>
-          <div class="gk"><div class="gk-name">Θ Put / day</div><div class="gk-val neg" id="g-pt">—</div></div>
+        <div class="gk-grid" id="gk-grid">
+          <div class="gk gk-call"><div class="gk-name" id="lbl-delta-call">Δ Delta</div><div class="gk-val pos" id="g-cd">—</div></div>
+          <div class="gk gk-put" style="display:none"><div class="gk-name">Δ Put delta</div><div class="gk-val neg" id="g-pd">—</div></div>
+          <div class="gk"><div class="gk-name">Γ Gamma</div><div class="gk-val pos" id="g-gm">—</div></div>
+          <div class="gk gk-call"><div class="gk-name" id="lbl-theta-call">Θ Theta / day</div><div class="gk-val neg" id="g-ct">—</div></div>
+          <div class="gk gk-put" style="display:none"><div class="gk-name">Θ Put theta / day</div><div class="gk-val neg" id="g-pt">—</div></div>
           <div class="gk"><div class="gk-name">V Vega / 1%σ</div><div class="gk-val pos" id="g-vg">—</div></div>
-          <div class="gk"><div class="gk-name">ρ Call / 1%r</div><div class="gk-val pos" id="g-cr">—</div></div>
-          <div class="gk"><div class="gk-name">ρ Put / 1%r</div><div class="gk-val neg" id="g-pr">—</div></div>
+          <div class="gk gk-call"><div class="gk-name" id="lbl-rho-call">ρ Rho / 1%r</div><div class="gk-val pos" id="g-cr">—</div></div>
+          <div class="gk gk-put" style="display:none"><div class="gk-name">ρ Put rho / 1%r</div><div class="gk-val neg" id="g-pr">—</div></div>
           <div class="gk"><div class="gk-name">T (years)</div><div class="gk-val" id="g-tv">—</div></div>
+        </div>
+        <!-- Hedge lot display -->
+        <div id="bs-hedge-row" class="hedge-row">
+          <span class="hedge-label">Hedge ratio — whole lots</span>
+          <span id="bs-hedge-txt" class="hedge-val">—</span>
         </div>
       </div>
     </div>
 
     <!-- Payoff diagram -->
     <div class="chart-block card" id="bs-payoff-wrap" style="margin-top:16px">
-      <div class="chart-hd">Payoff at expiry — profit &amp; loss</div>
-      <div class="leg">
-        <div class="li"><div class="lsq" style="background:#4f91f5"></div>Call payoff</div>
-        <div class="li"><div class="lsq" style="background:#f87171"></div>Put payoff</div>
-        <div class="li"><div class="lsq" style="background:#34d399;opacity:.8"></div>Call net P&amp;L</div>
-        <div class="li"><div class="lsq" style="background:#fbbf24;opacity:.8"></div>Put net P&amp;L</div>
+      <div class="chart-hd">Payoff at Expiry</div>
+      <div id="be-summary" style="display:none;margin-bottom:14px">
+        <div id="be-call-card" class="be-card pos-card">
+          <div class="be-card-label">Call breakeven</div>
+          <div class="be-card-row">
+            <span id="be-call-val" class="be-val">—</span>
+            <span id="be-call-formula" class="be-formula"></span>
+          </div>
+          <div class="be-note">Stock must close <strong>above</strong> this price for the call buyer to profit</div>
+        </div>
+        <div id="be-put-card" class="be-card warn-card">
+          <div class="be-card-label">Put breakeven</div>
+          <div class="be-card-row">
+            <span id="be-put-val" class="be-val">—</span>
+            <span id="be-put-formula" class="be-formula"></span>
+          </div>
+          <div class="be-note">Stock must close <strong>below</strong> this price for the put buyer to profit</div>
+        </div>
+      </div>
+      <div class="leg" id="payoff-legend">
+        <div class="li pay-call"><div class="lsq" style="background:#4080f0"></div>Call payoff</div>
+        <div class="li pay-put"><div class="lsq" style="background:#d95368"></div>Put payoff</div>
+        <div class="li pay-call-pnl"><div style="width:20px;height:2px;background:#36c47a;opacity:.8;border-top:2px dashed #36c47a;margin-top:-2px"></div>Call net P&amp;L</div>
+        <div class="li pay-put-pnl"><div style="width:20px;height:2px;background:#c28830;opacity:.8;border-top:2px dashed #c28830;margin-top:-2px"></div>Put net P&amp;L</div>
       </div>
       <div style="position:relative;height:260px">
         <canvas id="payoffChart" role="img" aria-label="Option payoff diagram"></canvas>
@@ -473,12 +562,12 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
 
     <!-- Premium sensitivity -->
     <div class="chart-block card" id="bs-sens-wrap" style="margin-top:16px">
-      <div class="chart-hd">Option premium vs spot price</div>
+      <div class="chart-hd">Premium vs Underlying Price</div>
       <div class="leg">
-        <div class="li"><div class="lsq" style="background:#4f91f5"></div>Call premium</div>
-        <div class="li"><div class="lsq" style="background:#f87171"></div>Put premium</div>
+        <div class="li" id="sens-leg-call"><div class="lsq" style="background:#4080f0"></div>Call premium</div>
+        <div class="li" id="sens-leg-put"><div class="lsq" style="background:#d95368"></div>Put premium</div>
       </div>
-      <div style="position:relative;height:230px">
+      <div style="position:relative;height:260px">
         <canvas id="sensChart" role="img" aria-label="Premium sensitivity chart"></canvas>
       </div>
     </div>
@@ -491,6 +580,11 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
       <!-- Inputs -->
       <div class="card">
         <div class="card-title">Parameters</div>
+
+        <div id="bin-arb-error" style="display:none;margin-bottom:14px;padding:10px 13px;
+          background:rgba(217,83,104,.08);border:1px solid rgba(217,83,104,.25);
+          border-left:2px solid var(--neg);border-radius:var(--radius-sm);
+          font-size:12px;color:var(--neg);font-family:var(--mono)"></div>
 
         <div class="field-row">
           <div class="field">
@@ -523,27 +617,27 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
         <div class="field-row">
           <div class="field">
             <label class="label">Time to expiry T <small>(years)</small></label>
-            <input type="number" id="bin-T" placeholder="e.g. 0.5" step="0.01" min="0" oninput="calcBin()">
-            <div class="field-hint">0.25 = 3 mo &nbsp;·&nbsp; 0.5 = 6 mo &nbsp;·&nbsp; 1 = 1 yr</div>
+            <input type="number" id="bin-T" placeholder="e.g. 0.5" step="0.0001" min="0.0001" oninput="calcBin()">
+            <div class="field-hint">0.0833 = 1 mo &nbsp;·&nbsp; 0.25 = 3 mo &nbsp;·&nbsp; 0.5 = 6 mo &nbsp;·&nbsp; 1 = 1 yr</div>
           </div>
           <div class="field">
             <label class="label">Risk-free rate r <small>(%)</small></label>
-            <input type="number" id="bin-r" placeholder="e.g. 8" step="0.5" oninput="calcBin()">
+            <input type="number" id="bin-r" placeholder="e.g. 7" step="0.5" oninput="calcBin()">
           </div>
         </div>
 
         <div class="field">
-          <label class="label">Dividend yield q <small>(% — use 0 if none)</small></label>
-          <input type="number" id="bin-q" value="0" step="0.5" min="0" oninput="calcBin()">
+          <label class="label">Dividend yield q <small>(% — leave 0 for non-dividend stocks)</small></label>
+          <input type="number" id="bin-q" placeholder="e.g. 0" step="0.5" min="0" oninput="calcBin()">
         </div>
 
-        <div class="rule">Volatility / Up-Down factors</div>
+        <div class="rule">Tree specification</div>
 
         <div class="field">
           <label class="label">Input method</label>
           <select id="bin-meth" onchange="toggleBinMeth();calcBin()">
-            <option value="vol">Specify σ — model computes u and d</option>
-            <option value="ud">Set u and d directly</option>
+            <option value="vol">Mode 1 — From σ (model computes u &amp; d)</option>
+            <option value="ud">Mode 2 — Set u &amp; d directly</option>
           </select>
         </div>
 
@@ -551,12 +645,12 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
           <div class="field-row">
             <div class="field">
               <label class="label">Volatility σ <small>(%)</small></label>
-              <input type="number" id="bin-vol" placeholder="e.g. 28" step="0.5" min="0" oninput="calcBin()">
+              <input type="number" id="bin-vol" placeholder="e.g. 25" step="0.5" min="0" oninput="calcBin()">
             </div>
             <div class="field">
               <label class="label">Steps N</label>
-              <input type="number" id="bin-N" value="2" step="1" min="1" max="500" oninput="calcBin()">
-              <div class="field-hint">Higher N → converges to BS</div>
+              <input type="number" id="bin-N" placeholder="e.g. 10" step="1" min="1" max="500" oninput="calcBin()" title="Low N = faster but less accurate. High N converges to Black-Scholes.">
+              <div class="field-hint">2 = simple tree &nbsp;·&nbsp; 50+ ≈ BS accuracy &nbsp;·&nbsp; Low N = fast, less accurate</div>
             </div>
           </div>
         </div>
@@ -564,19 +658,20 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
         <div id="bin-ud-sec" style="display:none">
           <div class="field-row">
             <div class="field">
-              <label class="label">Up factor u</label>
-              <input type="number" id="bin-u" placeholder="e.g. 1.10" step="0.01" min="1.01" oninput="calcBin()">
-              <div class="field-hint">1.10 = +10% per step</div>
+              <label class="label">Up factor u <small>(&gt; 1)</small></label>
+              <input type="number" id="bin-u" placeholder="1.10" step="0.01" min="1.01" oninput="calcBin()">
+              <div class="field-hint">e.g. 1.10 = +10% per step</div>
             </div>
             <div class="field">
-              <label class="label">Down factor d</label>
-              <input type="number" id="bin-d" placeholder="e.g. 0.91" step="0.01" max="0.99" oninput="calcBin()">
-              <div class="field-hint">CRR: d = 1/u</div>
+              <label class="label">Down factor d <small>(&lt; 1)</small></label>
+              <input type="number" id="bin-d" placeholder="0.91" step="0.01" max="0.99" oninput="calcBin()">
+              <div class="field-hint">CRR convention: d = 1/u</div>
             </div>
           </div>
           <div class="field">
             <label class="label">Steps N</label>
-            <input type="number" id="bin-N2" value="2" step="1" min="1" max="500" oninput="calcBin()">
+            <input type="number" id="bin-N2" placeholder="e.g. 10" step="1" min="1" max="500" oninput="calcBin()" title="Low N = faster but less accurate. High N converges to Black-Scholes.">
+            <div class="field-hint">2 = simple tree &nbsp;·&nbsp; 50+ ≈ BS accuracy &nbsp;·&nbsp; Low N = fast, less accurate</div>
           </div>
         </div>
       </div>
@@ -584,21 +679,24 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
       <!-- Results -->
       <div class="card">
         <div class="card-title">Pricing Output</div>
-        <div class="res-grid res-3">
-          <div class="res-box">
+
+        <!-- Primary result row -->
+        <div class="res-grid" style="grid-template-columns:1fr 1fr 1fr">
+          <div class="res-box accent-blu">
             <div class="res-name">Option price</div>
-            <div class="res-val blu" id="bin-price">—</div>
+            <div class="res-val" style="color:var(--accent)" id="bin-price">—</div>
             <div class="res-note">Binomial fair value</div>
           </div>
           <div class="res-box">
-            <div class="res-name">Implied σ</div>
+            <div class="res-name">Model-implied σ</div>
             <div class="res-val" id="bin-iv">—</div>
-            <div class="res-note">Annualised, from u &amp; d</div>
+            <div class="res-note">Back-calculated from u &amp; d</div>
+            <div id="bin-iv-warn" style="display:none;margin-top:4px;font-size:10.5px;color:var(--warn)">⚠ High σ — large u/d inputs</div>
           </div>
           <div class="res-box">
             <div class="res-name">Risk-neutral p</div>
-            <div class="res-val amb" id="bin-rp">—</div>
-            <div class="res-note">Up-move probability π</div>
+            <div class="res-val" style="color:var(--t2);font-size:22px" id="bin-rp">—</div>
+            <div class="res-note">Prob. of up move</div>
           </div>
         </div>
 
@@ -607,56 +705,78 @@ input[type=datetime-local]::-webkit-calendar-picker-indicator:hover { opacity: 1
           <div class="gk"><div class="gk-name">Up factor u</div><div class="gk-val pos" id="b-u">—</div></div>
           <div class="gk"><div class="gk-name">Down factor d</div><div class="gk-val neg" id="b-d">—</div></div>
           <div class="gk"><div class="gk-name">Δt per step</div><div class="gk-val" id="b-dt">—</div></div>
-          <div class="gk"><div class="gk-name">Δ Delta</div><div class="gk-val pos" id="b-dl">—</div></div>
+          <div class="gk"><div class="gk-name">Initial Delta Δ₀</div><div class="gk-val pos" id="b-dl">—</div></div>
           <div class="gk"><div class="gk-name">BS reference</div><div class="gk-val" id="b-bs">—</div></div>
-          <div class="gk"><div class="gk-name">Binomial vs BS</div><div class="gk-val" id="b-df">—</div></div>
+          <div class="gk"><div class="gk-name">vs BS</div><div class="gk-val" id="b-df">—</div></div>
+        </div>
+        <div id="bin-hedge-row" class="hedge-row">
+          <span class="hedge-label">Hedge ratio — whole lots</span>
+          <span id="bin-hedge-txt" class="hedge-val">—</span>
         </div>
 
-        <div id="bin-conv-wrap" style="display:none;margin-top:18px">
+        <div id="bin-conv-wrap" style="display:none;margin-top:16px">
           <div class="rule" style="margin-top:0">Convergence to Black-Scholes</div>
           <div class="leg">
-            <div class="li"><div class="lsq" style="background:#4f91f5"></div>Binomial price</div>
-            <div class="li"><div class="lsq" style="background:#34d399;opacity:.8"></div>BS reference</div>
+            <div class="li"><div class="lsq" style="background:#4080f0"></div>Binomial price</div>
+            <div class="li"><div class="lsq" style="background:#36c47a;opacity:.7"></div>BS reference</div>
           </div>
-          <div style="position:relative;height:155px">
-            <canvas id="convChart" role="img" aria-label="Binomial convergence chart"></canvas>
+          <div style="position:relative;height:160px">
+            <canvas id="convChart" role="img" aria-label="Convergence chart"></canvas>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Binomial payoff -->
-    <div class="chart-block card" id="bin-payoff-wrap" style="margin-top:16px">
-      <div class="chart-hd">Payoff at expiry — profit &amp; loss</div>
-      <div class="leg">
-        <div class="li"><div class="lsq" style="background:#4f91f5"></div>Option payoff</div>
-        <div class="li"><div class="lsq" style="background:#34d399;opacity:.8"></div>Net P&amp;L after premium</div>
+    <div class="chart-block card" id="bin-payoff-wrap" style="margin-top:14px">
+      <div class="chart-hd">Payoff at Expiry</div>
+      <!-- Breakeven card -->
+      <div id="bin-be-card" class="be-card warn-card" style="margin-bottom:14px">
+        <div class="be-card-label">Breakeven</div>
+        <div class="be-card-row">
+          <span id="bin-be-val" class="be-val">—</span>
+          <span id="bin-be-form" class="be-formula"></span>
+        </div>
+        <div id="bin-be-txt" class="be-note"></div>
       </div>
-      <div style="position:relative;height:240px">
+      <div class="leg">
+        <div class="li"><div class="lsq" style="background:#4080f0"></div>Option payoff</div>
+        <div class="li"><div style="width:20px;height:2px;border-top:2px dashed #36c47a;opacity:.8;margin-top:-2px"></div>Net P&amp;L after premium</div>
+      </div>
+      <div style="position:relative;height:260px">
         <canvas id="binPayoffChart" role="img" aria-label="Binomial payoff diagram"></canvas>
       </div>
     </div>
 
-    <!-- SVG binomial tree -->
-    <div class="chart-block card" id="bin-tree-wrap" style="margin-top:16px">
-      <div class="chart-hd">Binomial price tree — stock price &middot; option value &middot; probability</div>
-      <div class="leg" style="margin-bottom:14px">
-        <div class="li"><div class="lcir" style="background:#4f91f5"></div>Stock price (ITM = blue ring)</div>
-        <div class="li"><div class="lcir" style="background:#34d399"></div>Option value</div>
-        <div class="li"><div class="llin" style="background:#4f91f5"></div>p = up probability</div>
-        <div class="li"><div class="llin" style="background:#f87171"></div>1−p = down probability</div>
+    <!-- SVG price tree -->
+    <div class="chart-block card" id="bin-tree-wrap" style="margin-top:14px">
+      <div class="chart-hd">Binomial Price Tree</div>
+      <div class="leg" style="margin-bottom:14px;flex-wrap:wrap;gap:16px">
+        <div class="li">
+          <svg width="13" height="13"><circle cx="6.5" cy="6.5" r="5.5" fill="#0c1a30" stroke="#4080f0" stroke-width="2"/></svg>
+          In-the-money
+        </div>
+        <div class="li">
+          <svg width="13" height="13"><circle cx="6.5" cy="6.5" r="5.5" fill="#111827" stroke="rgba(255,255,255,.12)" stroke-width="1"/></svg>
+          Out-of-the-money
+        </div>
+        <div class="li" style="font-size:11.5px;color:var(--t2)">
+          <span style="color:var(--t1);font-weight:500">Top</span> = Stock price &nbsp;·&nbsp;
+          <span style="color:var(--pos);font-weight:500">Middle</span> = Option value &nbsp;·&nbsp;
+          <span style="color:#4080f0;font-weight:500">Δ</span> = Hedge ratio at node
+        </div>
       </div>
-      <div style="overflow-x:auto;overflow-y:hidden;padding-bottom:4px">
-        <svg id="bin-svg-tree" style="display:block" role="img" aria-label="Binomial tree diagram"></svg>
+      <div style="overflow-x:auto;overflow-y:hidden;padding-bottom:6px">
+        <svg id="bin-svg-tree" style="display:block" role="img" aria-label="Binomial price tree"></svg>
       </div>
     </div>
   </div>
 
   <div class="disclaimer">
-    <strong>A note on these numbers:</strong>
-    These are theoretical prices based on model assumptions — lognormal returns, constant volatility, continuous trading, no transaction costs.
-    Real options trade differently due to supply &amp; demand, skew, and liquidity.
-    Always verify with a live data source before making any trading decisions.
+    <strong>About this tool:</strong>
+    Prices are theoretical fair values computed under the Black-Scholes (1973) and Cox-Ross-Rubinstein (1979) models, assuming lognormal returns, constant volatility, and no arbitrage.
+    Real market prices will differ due to implied volatility skew, liquidity, early exercise premium, and bid-ask spreads.
+    <strong>Not financial advice.</strong> Always verify with a live data source before trading.
   </div>
 
 </div><!-- /wrap -->
@@ -699,9 +819,13 @@ function destroyChart(id) {
    TAB SWITCHING
 ══════════════════════════════════════════════════════════ */
 function switchTab(id, btn) {
-  document.querySelectorAll('.tab').forEach(function(b)  { b.classList.remove('on'); });
+  document.querySelectorAll('.tab').forEach(function(b) {
+    b.classList.remove('on');
+    b.setAttribute('aria-selected', 'false');
+  });
   document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('on'); });
   btn.classList.add('on');
+  btn.setAttribute('aria-selected', 'true');
   document.getElementById('p-' + id).classList.add('on');
   if (id === 'bin') calcBin();
 }
@@ -722,22 +846,26 @@ function onDatePick() {
   var v     = gv('bs-expiry');
   var badge = document.getElementById('bs-t-badge');
   if (!v) { badge.className = 't-badge'; calcBS(); return; }
-  var diff = new Date(v) - new Date();
-  if (diff <= 0) {
+  /* Parse the selected date at midnight, compare to today at midnight
+     so the day count is always exact calendar days — no rounding */
+  var parts   = v.split('-');
+  var expDate = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+  var todayDate = new Date();
+  todayDate.setHours(0, 0, 0, 0);
+  var diffMs  = expDate - todayDate;
+  if (diffMs <= 0) {
     badge.className = 't-badge past show';
     badge.textContent = 'This date is in the past — enter T manually';
     calcBS(); return;
   }
-  var T    = diff / (365.25 * 24 * 3600 * 1000);
+  /* Exact calendar days — no ceil, no floor, just integer difference */
+  var days = Math.round(diffMs / 86400000);
+  /* T uses exact days / 365 */
+  var T    = days / 365;
   var Trd  = Math.max(Math.round(T * 10000) / 10000, 0.0001);
-  var days   = Math.floor(diff / 86400000);
-  var hours  = Math.floor((diff % 86400000) / 3600000);
-  var timeStr = days > 0
-    ? days + (days === 1 ? ' day' : ' days') + (hours > 0 ? ' ' + hours + 'h' : '')
-    : hours + (hours === 1 ? ' hour' : ' hours');
   document.getElementById('bs-T').value = Trd;
   badge.className = 't-badge show';
-  badge.textContent = timeStr + ' → T = ' + Trd + ' yrs (filled above)';
+  badge.textContent = days + (days === 1 ? ' day' : ' days') + ' → T = ' + Trd + ' yrs';
   calcBS();
 }
 
@@ -776,6 +904,9 @@ function calcBS() {
 
   if (!S || S <= 0 || !K || K <= 0 || !T || sig === null || sig <= 0 || r === null) {
     IDS.forEach(function(id) { setText(id, '—'); });
+    var nd1r = document.getElementById('r-nd1'); if (nd1r) nd1r.textContent = '—';
+    var nd2r = document.getElementById('r-nd2'); if (nd2r) nd2r.textContent = '—';
+    var beSumR = document.getElementById('be-summary'); if (beSumR) beSumR.style.display = 'none';
     hideEl('bs-payoff-wrap'); hideEl('bs-sens-wrap');
     return;
   }
@@ -804,24 +935,146 @@ function calcBS() {
   var cRho   =  K * T * erT * Phi(d2)  / 100;                     /* per 1% r */
   var pRho   = -K * T * erT * Phi(-d2) / 100;
 
-  setText('r-call', C.toFixed(4));
-  setText('r-put',  P.toFixed(4));
-  setText('r-d1',   d1.toFixed(6));
-  setText('r-d2',   d2.toFixed(6));
-  setText('g-cd',   cDelta.toFixed(5));
-  setText('g-pd',   pDelta.toFixed(5));
-  setText('g-gm',   gamma.toFixed(7));
-  setText('g-ct',   cTheta.toFixed(5));
-  setText('g-pt',   pTheta.toFixed(5));
-  setText('g-vg',   vega.toFixed(5));
-  setText('g-cr',   cRho.toFixed(5));
-  setText('g-pr',   pRho.toFixed(5));
-  setText('g-tv',   T.toFixed(4));
+  /* ═══ Respect option type selection ═══ */
+  var optType  = gv('bs-type');
+  var isCall   = (optType === 'call');
+  var isPut    = (optType === 'put');
+  var isBoth   = (optType === 'both');
+  var showCall = isCall || isBoth;
+  var showPut  = isPut  || isBoth;
+
+  /* ── 1. Premium boxes ── */
+  var elBoxCall = document.getElementById('box-call');
+  var elBoxPut  = document.getElementById('box-put');
+  if (elBoxCall) elBoxCall.style.display = showCall ? '' : 'none';
+  if (elBoxPut)  elBoxPut.style.display  = showPut  ? '' : 'none';
+  setText('r-call', showCall ? C.toFixed(4) : '—');
+  setText('r-put',  showPut  ? P.toFixed(4) : '—');
+
+  /* ── Moneyness badges ── */
+  var mThresh = 0.005;
+  var moneyRatio = S / K;
+  var mLabel, mBg, mColor;
+  if (Math.abs(moneyRatio - 1) < mThresh) {
+    mLabel='ATM'; mBg='rgba(154,175,208,.12)'; mColor='var(--t2)';
+  } else if (moneyRatio > 1) {
+    mLabel='ITM'; mBg='rgba(54,196,122,.12)'; mColor='var(--pos)';
+  } else {
+    mLabel='OTM'; mBg='rgba(217,83,104,.12)'; mColor='var(--neg)';
+  }
+  /* For put: ITM/OTM is reversed */
+  var mLabelP = mLabel === 'ITM' ? 'OTM' : mLabel === 'OTM' ? 'ITM' : 'ATM';
+  var mBgP    = mLabelP === 'ITM' ? 'rgba(54,196,122,.12)' : mLabelP === 'OTM' ? 'rgba(217,83,104,.12)' : 'rgba(154,175,208,.12)';
+  var mColorP = mLabelP === 'ITM' ? 'var(--pos)' : mLabelP === 'OTM' ? 'var(--neg)' : 'var(--t2)';
+  var cmEl = document.getElementById('bs-call-money');
+  var pmEl = document.getElementById('bs-put-money');
+  if (cmEl && showCall) {
+    cmEl.style.display='inline'; cmEl.textContent=mLabel;
+    cmEl.style.background=mBg; cmEl.style.color=mColor;
+  } else if (cmEl) cmEl.style.display='none';
+  if (pmEl && showPut) {
+    pmEl.style.display='inline'; pmEl.textContent=mLabelP;
+    pmEl.style.background=mBgP; pmEl.style.color=mColorP;
+  } else if (pmEl) pmEl.style.display='none';
+
+  /* ── 2. d1 / d2 always visible ── */
+  setText('r-d1', d1.toFixed(6));
+  setText('r-d2', d2.toFixed(6));
+  var nd1el = document.getElementById('r-nd1');
+  var nd2el = document.getElementById('r-nd2');
+  if (nd1el) nd1el.textContent = Phi(d1).toFixed(5);
+  if (nd2el) nd2el.textContent = Phi(d2).toFixed(5);
+
+  /* ── 3. Greeks: hide/show call vs put rows, update labels for clarity ── */
+  /* Call greek cells */
+  document.querySelectorAll('.gk-call').forEach(function(el) {
+    el.style.display = showCall ? '' : 'none';
+  });
+  /* Put greek cells */
+  document.querySelectorAll('.gk-put').forEach(function(el) {
+    el.style.display = showPut ? '' : 'none';
+  });
+
+  /* When "Both" is shown, label call greeks explicitly */
+  var lblDelta = document.getElementById('lbl-delta-call');
+  var lblTheta = document.getElementById('lbl-theta-call');
+  var lblRho   = document.getElementById('lbl-rho-call');
+  if (lblDelta) lblDelta.textContent = isBoth ? 'Δ Call delta'   : 'Δ Delta';
+  if (lblTheta) lblTheta.textContent = isBoth ? 'Θ Call / day'   : 'Θ Theta / day';
+  if (lblRho)   lblRho.textContent   = isBoth ? 'ρ Call / 1%r'   : 'ρ Rho / 1%r';
+
+  /* Set greek values */
+  setText('g-cd', cDelta.toFixed(5));
+  setText('g-pd', pDelta.toFixed(5));
+  setText('g-gm', gamma.toFixed(7));
+  setText('g-ct', cTheta.toFixed(5));
+  setText('g-pt', pTheta.toFixed(5));
+  setText('g-vg', vega.toFixed(5));
+  setText('g-cr', cRho.toFixed(5));
+  setText('g-pr', pRho.toFixed(5));
+  setText('g-tv', T.toFixed(4));
+
+  /* ── Hedge lot display ── */
+  var hedgeRow = document.getElementById('bs-hedge-row');
+  var hedgeTxt = document.getElementById('bs-hedge-txt');
+  if (hedgeRow && hedgeTxt) {
+    var hDelta = showCall ? cDelta : Math.abs(pDelta);
+    var lot    = hedgeLot(hDelta);
+    if (lot) {
+      var direction = showPut ? 'sell' : 'buy';
+      hedgeTxt.innerHTML =
+        'To hedge <strong style="color:var(--t1)">' + lot.n + '</strong> ' +
+        (optType === 'put' ? 'put' : 'call') + (lot.n > 1 ? ' options' : ' option') +
+        ' → ' + direction + ' <strong style="color:var(--accent)">' + lot.shares + '</strong> share' +
+        (lot.shares > 1 ? 's' : '') +
+        ' &nbsp;<span style="color:var(--t3);font-size:10.5px">(' +
+        lot.n + ' × ' + hDelta.toFixed(4) + ' = ' + lot.exact.toFixed(3) + ' ≈ ' + lot.shares + ')</span>';
+      hedgeRow.classList.add('show');
+    } else {
+      hedgeRow.classList.remove('show');
+    }
+  }
+
+  /* ── 4. Payoff chart legend ── */
+  document.querySelectorAll('.pay-call, .pay-call-pnl').forEach(function(el) {
+    el.style.display = showCall ? '' : 'none';
+  });
+  document.querySelectorAll('.pay-put, .pay-put-pnl').forEach(function(el) {
+    el.style.display = showPut ? '' : 'none';
+  });
+
+  /* ── 5. Sensitivity chart legend ── */
+  var sensLegCall = document.getElementById('sens-leg-call');
+  var sensLegPut  = document.getElementById('sens-leg-put');
+  if (sensLegCall) sensLegCall.style.display = showCall ? '' : 'none';
+  if (sensLegPut)  sensLegPut.style.display  = showPut  ? '' : 'none';
+
+  /* ── 6. Breakeven summary cards ── */
+  var callBEval = K + C;   /* Strike + Call premium paid */
+  var putBEval  = K - P;   /* Strike − Put premium paid  */
+
+  var beSummary    = document.getElementById('be-summary');
+  var beCallCard   = document.getElementById('be-call-card');
+  var bePutCard    = document.getElementById('be-put-card');
+  var beCallVal    = document.getElementById('be-call-val');
+  var bePutVal     = document.getElementById('be-put-val');
+  var beCallForm   = document.getElementById('be-call-formula');
+  var bePutForm    = document.getElementById('be-put-formula');
+
+  if (beSummary) { if(showCall||showPut) beSummary.style.display='block'; else beSummary.style.display='none'; }
+
+  if (beCallCard) { if(showCall) beCallCard.classList.add('show'); else beCallCard.classList.remove('show'); }
+  if (beCallVal)  beCallVal.textContent  = fmtX(callBEval);
+  if (beCallForm) beCallForm.textContent = '= Strike (' + fmtX(K) + ') + Premium (' + C.toFixed(2) + ')';
+
+  if (bePutCard)  { if(showPut) bePutCard.classList.add('show'); else bePutCard.classList.remove('show'); }
+  if (bePutVal)   bePutVal.textContent   = fmtX(putBEval);
+  if (bePutForm)  bePutForm.textContent  = '= Strike (' + fmtX(K) + ') − Premium (' + P.toFixed(2) + ')';
 
   showEl('bs-payoff-wrap');
   showEl('bs-sens-wrap');
-  drawPayoff(S, K, sig, T, C, P, 'payoffChart', true);
-  drawSens(S, K, sig, r, q, T);
+  drawPayoff(S, K, sig, T, C, P, 'payoffChart', isBoth, isPut ? 'put' : 'call');
+  drawSens(S, K, sig, r, q, T, optType);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -831,7 +1084,7 @@ function binCRR(S, K, T, r, q, Ns, u, d, style, type) {
   var dt   = T / Ns;
   var p    = (Math.exp((r - q) * dt) - d) / (u - d);
   var disc = Math.exp(-r * dt);
-  if (p < 0 || p > 1) return null;        /* arbitrage — invalid params */
+  if (p < 0 || p > 1) return null;
 
   /* Terminal payoffs */
   var vs = [];
@@ -839,7 +1092,9 @@ function binCRR(S, K, T, r, q, Ns, u, d, style, type) {
     var sT = S * Math.pow(u, Ns - i) * Math.pow(d, i);
     vs.push(type === 'call' ? Math.max(sT - K, 0) : Math.max(K - sT, 0));
   }
-  /* Backward induction */
+
+  /* Backward induction — capture Cu, Cd at step j=1 for hedge-ratio delta */
+  var Cu = 0, Cd = 0;
   for (var j = Ns - 1; j >= 0; j--) {
     for (var i = 0; i <= j; i++) {
       var hold = disc * (p * vs[i] + (1 - p) * vs[i + 1]);
@@ -851,8 +1106,14 @@ function binCRR(S, K, T, r, q, Ns, u, d, style, type) {
         vs[i] = hold;
       }
     }
+    /* After reducing to step 1, capture up/down values */
+    if (j === 1) { Cu = vs[0]; Cd = vs[1]; }
   }
-  return { price: vs[0], p: p };
+
+  /* Hedge-ratio delta: ΔV / ΔS — far more accurate than FD approach (legacy) */
+  var delta = Ns >= 2 ? (Cu - Cd) / (S * u - S * d) : 0;
+
+  return { price: vs[0], p: p, delta: delta };
 }
 
 function bsRef(S, K, T, sig, r, q, type) {
@@ -881,6 +1142,8 @@ function calcBin() {
     BLANK.forEach(function(id) { setText(id, '—'); });
     hideEl('bin-payoff-wrap'); hideEl('bin-tree-wrap');
     document.getElementById('bin-conv-wrap').style.display = 'none';
+    var errEl = document.getElementById('bin-arb-error');
+    if (errEl) errEl.style.display = 'none';
     return;
   }
 
@@ -903,17 +1166,36 @@ function calcBin() {
     sig = Math.log(u) / Math.sqrt(T / Ns);
   }
 
+  /* ── No-arbitrage validation: d < e^(rΔt) < u ── */
+  var errEl = document.getElementById('bin-arb-error');
+  var dt0   = T / Ns;
+  var growth = Math.exp((r - q) * dt0);
+  var p_check = (growth - d) / (u - d);
+  if (p_check <= 0 || p_check >= 1) {
+    BLANK.forEach(function(id) { setText(id, '—'); });
+    if (errEl) {
+      errEl.style.display = 'block';
+      errEl.textContent   = p_check <= 0
+        ? 'Invalid tree — arbitrage: d ≥ e^(rΔt). Increase N or reduce d.'
+        : 'Invalid tree — arbitrage: u ≤ e^(rΔt). Increase N or increase u.';
+    }
+    hideEl('bin-payoff-wrap'); hideEl('bin-tree-wrap');
+    document.getElementById('bin-conv-wrap').style.display = 'none';
+    return;
+  }
+  if (errEl) errEl.style.display = 'none';
+
   var res = binCRR(S, K, T, r, q, Ns, u, d, style, type);
   if (!res) { BLANK.forEach(function(id) { setText(id, 'ERR'); }); return; }
 
-  var bs   = bsRef(S, K, T, sig, r, q, type);
-  var dUp  = binCRR(S * 1.001, K, T, r, q, Ns, u, d, style, type);
-  var dDn  = binCRR(S * 0.999, K, T, r, q, Ns, u, d, style, type);
-  var delta = (dUp && dDn) ? (dUp.price - dDn.price) / (S * 0.002) : 0;
+  var bs    = bsRef(S, K, T, sig, r, q, type);
+  var delta = res.delta;
   var diff  = res.price - bs;
 
   setText('bin-price', res.price.toFixed(4));
   setText('bin-iv',    (sig * 100).toFixed(2) + '%');
+  var ivWarn = document.getElementById('bin-iv-warn');
+  if (ivWarn) ivWarn.style.display = sig > 1.0 ? 'block' : 'none';
   setText('bin-rp',    res.p.toFixed(5));
   setText('b-u',       u.toFixed(5));
   setText('b-d',       d.toFixed(5));
@@ -922,85 +1204,119 @@ function calcBin() {
   setText('b-bs',      bs.toFixed(4));
   setText('b-df',      (diff >= 0 ? '+' : '') + diff.toFixed(4));
 
+  /* ── Colour the Binomial vs BS diff — pos=green, neg=red ── */
+  var bdfEl = document.getElementById('b-df');
+  if (bdfEl) bdfEl.className = 'gk-val' + (diff > 0.001 ? ' pos' : diff < -0.001 ? ' neg' : '');
+
+  /* ── Hedge lot display ── */
+  var binHedgeRow = document.getElementById('bin-hedge-row');
+  var binHedgeTxt = document.getElementById('bin-hedge-txt');
+  if (binHedgeRow && binHedgeTxt) {
+    var bLot = hedgeLot(Math.abs(delta));
+    if (bLot) {
+      var bDir = type === 'put' ? 'sell' : 'buy';
+      binHedgeTxt.innerHTML =
+        'To hedge <strong style="color:var(--t1)">' + bLot.n + '</strong> ' +
+        type + (bLot.n > 1 ? ' options' : ' option') +
+        ' → ' + bDir + ' <strong style="color:var(--accent)">' + bLot.shares + '</strong> share' +
+        (bLot.shares > 1 ? 's' : '') +
+        ' &nbsp;<span style="color:var(--t3);font-size:10.5px">(' +
+        bLot.n + ' × ' + Math.abs(delta).toFixed(4) + ' = ' + (bLot.exact).toFixed(3) + ' ≈ ' + bLot.shares + ')</span>';
+      binHedgeRow.classList.add('show');
+    } else {
+      binHedgeRow.classList.remove('show');
+    }
+  }
+
+  /* ── Breakeven ── */
+  var beVal  = type === 'call' ? K + res.price : K - res.price;
+  var beCard = document.getElementById('bin-be-card');
+  var beValEl= document.getElementById('bin-be-val');
+  var beFormEl=document.getElementById('bin-be-form');
+  var beTxtEl= document.getElementById('bin-be-txt');
+  if (beCard)  beCard.classList.add('show');
+  if (beValEl) beValEl.textContent   = fmtX(beVal);
+  if (beFormEl)beFormEl.textContent  = type === 'call'
+    ? '= Strike (' + fmtX(K) + ') + Premium (' + res.price.toFixed(2) + ')'
+    : '= Strike (' + fmtX(K) + ') − Premium (' + res.price.toFixed(2) + ')';
+  if (beTxtEl) beTxtEl.textContent = type === 'call'
+    ? 'Stock must close above this price for the call buyer to profit'
+    : 'Stock must close below this price for the put buyer to profit';
+
   showEl('bin-payoff-wrap');
   showEl('bin-tree-wrap');
   document.getElementById('bin-conv-wrap').style.display = 'block';
 
-  drawConv(S, K, T, r, q, u, d, Ns, style, type, bs);
+  drawConv(S, K, T, r, q, u, d, Ns, style, type, bs, sig);
   drawPayoff(S, K, sig, T, res.price, 0, 'binPayoffChart', false, type);
   drawSVGTree(S, K, T, r, q, Ns, u, d, style, type, res.p);
 }
 
 /* ══════════════════════════════════════════════════════════
-   CHARTS
+   CHARTS — CONTINUOUS HOVER SYSTEM
+   
+   Architecture:
+   - Chart.js renders the lines with pointRadius:0 (no dots)
+   - tooltip is DISABLED in Chart.js completely
+   - A custom canvas overlay div sits on top, capturing mousemove
+   - On every mousemove we:
+       1. Convert pixel X → data X (the spot/underlying price)
+       2. Calculate the exact option value at that price using the formula
+       3. Draw a vertical crosshair line on the overlay canvas
+       4. Show a custom HTML tooltip div at the cursor position
+   - This gives true continuous hover at every pixel
 ══════════════════════════════════════════════════════════ */
-var TOOLTIP = {
-  backgroundColor: 'rgba(18,24,36,.97)',
-  borderColor: 'rgba(255,255,255,.12)', borderWidth: 1,
-  titleFont: { family: "'JetBrains Mono'", size: 12 },
-  bodyFont:  { family: "'JetBrains Mono'", size: 12 },
-  padding: 12,
-  cornerRadius: 6
-};
-var GRID  = 'rgba(255,255,255,.04)';
-var TICK  = { color: '#94a3bc', font: { size: 11 } };
-var ATICK = { color: '#7a90b0', font: { size: 12 } };
+var GRID = 'rgba(255,255,255,.04)';
+var TICK = { color: '#6a8aaa', font: { size: 11 } };
 
-/* ── Crosshair plugin: draws a vertical line at cursor position
-   and shows a custom tooltip with interpolated values at that exact x ── */
-var CrosshairPlugin = {
-  id: 'crosshair',
-  afterInit: function(chart) {
-    chart._crossX = null;
-  },
-  afterEvent: function(chart, args) {
-    var e = args.event;
-    if (e.type === 'mousemove') {
-      chart._crossX = e.x;
-    } else if (e.type === 'mouseout') {
-      chart._crossX = null;
-    }
-    chart.draw();
-  },
-  afterDraw: function(chart) {
-    if (chart._crossX === null) return;
-    var ctx  = chart.ctx;
-    var area = chart.chartArea;
-    var x    = chart._crossX;
-    if (x < area.left || x > area.right) return;
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(x, area.top);
-    ctx.lineTo(x, area.bottom);
-    ctx.strokeStyle = 'rgba(255,255,255,.25)';
-    ctx.lineWidth   = 1;
-    ctx.setLineDash([4, 3]);
-    ctx.stroke();
-    ctx.restore();
-  }
-};
-Chart.register(CrosshairPlugin);
+/* Format a number for display */
+function fmt(v) {
+  if (Math.abs(v) >= 10000) return v.toLocaleString(undefined, {maximumFractionDigits:2});
+  if (Math.abs(v) >= 1000)  return v.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+  return v.toFixed(2);
+}
+function fmtX(v) {
+  /* Always 2 decimal places — no rounding for breakeven prices */
+  return v.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+}
 
-function baseOpts(xl, yl) {
+/* ── Chart range: Expected Move = S×σ×√T ─────────────────────────────── */
+function getRange(S, K, sig, T) {
+  var expMove   = S * sig * Math.sqrt(T);
+  var halfRange = Math.max(expMove * 3, S * 0.05);
+      halfRange = Math.min(halfRange, S * 0.40);
+  var mid = (S + K) / 2;
+  var lo  = Math.max(mid - halfRange, 1);
+  var hi  = mid + halfRange;
+  lo = Math.min(lo, Math.min(S, K) * 0.97);
+  hi = Math.max(hi, Math.max(S, K) * 1.03);
+  return { lo: lo, hi: hi };
+}
+
+/* ── Base chart options: NO tooltip, linear x-axis ───────────────────── */
+function baseOpts(xl, yl, lo, hi) {
   return {
     responsive: true, maintainAspectRatio: false,
-    /* intersect:false + index mode means tooltip fires anywhere on chart */
-    interaction: { mode: 'index', intersect: false, axis: 'x' },
-    plugins: { legend: { display: false }, tooltip: TOOLTIP },
+    animation: false,
+    interaction: { mode: 'none' },        /* disable built-in hover completely */
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: false }          /* we handle tooltip ourselves */
+    },
     scales: {
       x: {
-        type: 'linear',
+        type: 'linear', min: lo, max: hi,
         title: { display: true, text: xl, color: '#94a3bc', font: { size: 12, weight: '500' } },
         ticks: {
           color: '#94a3bc', font: { size: 11 }, maxRotation: 0, minRotation: 0,
           autoSkip: true, maxTicksLimit: 12,
-          callback: function(v) { return v >= 1000 ? v.toLocaleString() : v; }
+          callback: function(v) { return v >= 1000 ? Math.round(v).toLocaleString() : v; }
         },
         grid: { color: GRID }
       },
       y: {
-        title: { display: true, text: yl, color: '#94a3bc', font: { size: 12, weight: '500' } },
-        ticks: { color: '#94a3bc', font: { size: 11 },
+        title: { display: true, text: yl, color: '#6a8aaa', font: { size: 12, weight: '500' } },
+        ticks: { color: '#6a8aaa', font: { size: 11 },
           callback: function(v) {
             if (Math.abs(v) >= 1000) return (v/1000).toFixed(1) + 'K';
             return v.toFixed(v % 1 === 0 ? 0 : 2);
@@ -1012,189 +1328,412 @@ function baseOpts(xl, yl) {
   };
 }
 
-/* ── Smart chart range ──────────────────────────────────────────────────
-   Range is driven by EXPECTED MOVE = S × σ × √T (1-std-dev move).
-   Width = 3× expected move each side of midpoint(S,K).
-   Floor: ±5% of S so chart never collapses on tiny T.
-   Cap:   ±40% of S so very long-dated options stay readable.
-   Step: trader-natural round number giving 8-14 labels.
-──────────────────────────────────────────────────────────────────────── */
-function chartPoints(S, K, sig, T) {
-  /* ── Range: driven by expected move = S*σ*√T ── */
-  var expMove   = S * sig * Math.sqrt(T);
-  var halfRange = Math.max(expMove * 3, S * 0.05);
-      halfRange = Math.min(halfRange, S * 0.40);
-  var mid = (S + K) / 2;
-  var lo  = Math.max(mid - halfRange, 1);
-  var hi  = mid + halfRange;
-  lo = Math.min(lo, Math.min(S, K) * 0.97);
-  hi = Math.max(hi, Math.max(S, K) * 1.03);
+/* ── Attach continuous hover to a chart canvas ───────────────────────────
+   calcFn(spotPrice) → array of {label, value, color} objects
+   Called on every mousemove. Draws crosshair + HTML tooltip.
+────────────────────────────────────────────────────────────────────────── */
+function attachHover(chartInst, canvasEl, titlePrefix, calcFn) {
+  /* Create overlay canvas */
+  var wrap = canvasEl.parentElement;
+  wrap.style.position = 'relative';
 
-  /* ── Generate 1000 evenly spaced points for pixel-smooth hover ── */
-  var n = 1000;
-  var step = (hi - lo) / n;
-  var points = [];
-  for (var i = 0; i <= n; i++) {
-    points.push(lo + i * step);
+  /* Remove old overlay if exists */
+  var old = wrap.querySelector('.hover-overlay');
+  if (old) old.remove();
+  var oldTip = wrap.querySelector('.hover-tip');
+  if (oldTip) oldTip.remove();
+
+  var overlay = document.createElement('canvas');
+  overlay.className = 'hover-overlay';
+  overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10';
+  wrap.appendChild(overlay);
+
+  /* Tooltip div */
+  var tip = document.createElement('div');
+  tip.className = 'hover-tip';
+  tip.style.cssText = [
+    'position:absolute',
+    'background:rgba(7,9,15,.97)',
+    'border:1px solid rgba(255,255,255,.1)',
+    'border-radius:7px',
+    'padding:10px 14px',
+    'font-family:JetBrains Mono,monospace',
+    'font-size:12px',
+    'color:#e2e8f4',
+    'pointer-events:none',
+    'z-index:20',
+    'display:none',
+    'white-space:nowrap',
+    'box-shadow:0 8px 32px rgba(0,0,0,.6)',
+    'line-height:1.8'
+  ].join(';');
+  wrap.appendChild(tip);
+
+  function resize() {
+    overlay.width  = wrap.offsetWidth;
+    overlay.height = wrap.offsetHeight;
   }
-  return points;
-}
+  resize();
+  new ResizeObserver(resize).observe(wrap);
 
-/* ── Separate function for tick labels on axis ──
-   Returns clean round values for display only (not data density) */
-function axisTickValues(S, K, sig, T) {
-  var expMove   = S * sig * Math.sqrt(T);
-  var halfRange = Math.max(expMove * 3, S * 0.05);
-      halfRange = Math.min(halfRange, S * 0.40);
-  var mid = (S + K) / 2;
-  var lo  = Math.max(mid - halfRange, 1);
-  var hi  = mid + halfRange;
-  lo = Math.min(lo, Math.min(S, K) * 0.97);
-  hi = Math.max(hi, Math.max(S, K) * 1.03);
-  var range   = hi - lo;
-  var rawStep = range / 10;
-  var mag     = Math.pow(10, Math.floor(Math.log10(rawStep)));
-  var step    = mag;
-  var niceArr = [1, 2, 2.5, 5, 10];
-  for (var k = 0; k < niceArr.length; k++) {
-    var s = niceArr[k] * mag;
-    var n = range / s;
-    if (n >= 6 && n <= 14) { step = s; break; }
-  }
-  return step;
-}
+  wrap.addEventListener('mousemove', function(e) {
+    var rect = wrap.getBoundingClientRect();
+    var mx   = e.clientX - rect.left;
+    var my   = e.clientY - rect.top;
+    var area = chartInst.chartArea;
+    if (!area) return;
 
-/* Payoff / P&L diagram — shared by BS and Binomial */
-function drawPayoff(S, K, sig, T, cPrem, pPrem, canvasId, showBoth, type) {
-  var points = chartPoints(S, K, sig, T);
-
-  var ds = [];
-  var opts = baseOpts('Underlying at expiry', 'Profit / Loss');
-  /* Tooltip: show price at cursor position with proper formatting */
-  opts.plugins.tooltip = Object.assign({}, TOOLTIP, {
-    callbacks: {
-      title: function(items) {
-        var x = items[0].parsed.x;
-        /* Round to nearest 0.01 for clean display */
-        var xr = Math.round(x * 100) / 100;
-        return 'Underlying: ' + (xr >= 1000 ? xr.toLocaleString() : xr.toFixed(2));
-      },
-      label: function(ctx) {
-        /* Skip the zero break-even dataset from label list */
-        var names = showBoth
-          ? ['Call payoff','Put payoff','Call net P&L','Put net P&L','']
-          : ['Option payoff','Net P&L',''];
-        var label = names[ctx.datasetIndex];
-        if (!label) return null;
-        var v = ctx.parsed.y;
-        return label + ':  ' + (Math.abs(v) >= 1000
-          ? v.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})
-          : v.toFixed(2));
-      },
-      filter: function(item) { return item.parsed.y !== 0 || item.datasetIndex < (showBoth ? 4 : 2); }
+    /* Clip to chart area */
+    if (mx < area.left || mx > area.right || my < area.top || my > area.bottom) {
+      tip.style.display = 'none';
+      var octx = overlay.getContext('2d');
+      octx.clearRect(0, 0, overlay.width, overlay.height);
+      return;
     }
+
+    /* Pixel → data value */
+    var xScale  = chartInst.scales.x;
+    var spotVal = xScale.getValueForPixel(mx);
+
+    /* Calculate values */
+    var rows = calcFn(spotVal);
+
+    /* Draw crosshair */
+    var octx = overlay.getContext('2d');
+    octx.clearRect(0, 0, overlay.width, overlay.height);
+    octx.save();
+    octx.beginPath();
+    octx.moveTo(mx, area.top);
+    octx.lineTo(mx, area.bottom);
+    octx.strokeStyle = 'rgba(255,255,255,.3)';
+    octx.lineWidth   = 1;
+    octx.setLineDash([4, 3]);
+    octx.stroke();
+    /* Dot on each line */
+    rows.forEach(function(row) {
+      if (row.value === null) return;
+      var yScale = chartInst.scales.y;
+      var py = yScale.getPixelForValue(row.value);
+      if (py >= area.top && py <= area.bottom) {
+        octx.beginPath();
+        octx.arc(mx, py, 4, 0, Math.PI * 2);
+        octx.fillStyle   = row.color;
+        octx.strokeStyle = '#07090f';
+        octx.lineWidth   = 1.5;
+        octx.fill();
+        octx.stroke();
+      }
+    });
+    octx.restore();
+
+    /* Build tooltip HTML */
+    var xLabel = titlePrefix + ': <strong>' + fmtX(spotVal) + '</strong>';
+    var lines  = rows.map(function(row) {
+      return '<span style="color:' + row.color + '">■</span> ' +
+             row.label + ': <strong>' + fmt(row.value) + '</strong>';
+    });
+    tip.innerHTML = xLabel + '<br>' + lines.join('<br>');
+
+    /* Position tooltip: prefer right of cursor, flip if too close to edge */
+    var tipW = tip.offsetWidth  || 200;
+    var tipH = tip.offsetHeight || 80;
+    var tx   = mx + 14;
+    var ty   = my - tipH / 2;
+    if (tx + tipW > wrap.offsetWidth  - 8) tx = mx - tipW - 14;
+    if (ty < 4)                           ty = 4;
+    if (ty + tipH > wrap.offsetHeight - 4) ty = wrap.offsetHeight - tipH - 4;
+    tip.style.left    = tx + 'px';
+    tip.style.top     = ty + 'px';
+    tip.style.display = 'block';
   });
+
+  wrap.addEventListener('mouseleave', function() {
+    tip.style.display = 'none';
+    var octx = overlay.getContext('2d');
+    octx.clearRect(0, 0, overlay.width, overlay.height);
+  });
+}
+
+/* ── drawPayoff — Payoff & P&L diagram ───────────────────────────────── */
+function drawPayoff(S, K, sig, T, cPrem, pPrem, canvasId, showBoth, type) {
+  var rng    = getRange(S, K, sig, T);
+  var lo     = rng.lo, hi = rng.hi;
+  var n      = 300;
+  var step   = (hi - lo) / n;
+  var opts   = baseOpts('Underlying at expiry', 'Profit / Loss', lo, hi);
+  var ds     = [];
+
+  /* ── Breakeven prices ──
+     Call BE = K + call premium
+     Put  BE = K − put premium                        */
+  var callBE = K + cPrem;
+  var putBE  = K - pPrem;
 
   if (showBoth) {
     var cp=[],pp=[],cn=[],pn=[];
-    points.forEach(function(st){
+    for (var i=0;i<=n;i++){
+      var st=lo+i*step;
       cp.push({x:st,y:Math.max(st-K,0)});
       pp.push({x:st,y:Math.max(K-st,0)});
       cn.push({x:st,y:Math.max(st-K,0)-cPrem});
       pn.push({x:st,y:Math.max(K-st,0)-pPrem});
-    });
+    }
     ds = [
-      { data:cp, borderColor:'#4f91f5', borderWidth:2,   pointRadius:0, tension:.1 },
-      { data:pp, borderColor:'#f87171', borderWidth:2,   pointRadius:0, tension:.1 },
-      { data:cn, borderColor:'#34d399', borderWidth:1.5, borderDash:[5,4], pointRadius:0, tension:.1 },
-      { data:pn, borderColor:'#fbbf24', borderWidth:1.5, borderDash:[5,4], pointRadius:0, tension:.1 }
+      {data:cp,borderColor:'#4080f0',borderWidth:2,  pointRadius:0,tension:.1},
+      {data:pp,borderColor:'#d95368',borderWidth:2,  pointRadius:0,tension:.1},
+      {data:cn,borderColor:'#36c47a',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.1},
+      {data:pn,borderColor:'#c28830',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.1}
     ];
   } else {
     var pay=[],pnl=[];
-    points.forEach(function(st){
+    for (var i=0;i<=n;i++){
+      var st=lo+i*step;
       var p2=type==='call'?Math.max(st-K,0):Math.max(K-st,0);
       pay.push({x:st,y:p2}); pnl.push({x:st,y:p2-cPrem});
-    });
+    }
     ds = [
-      { data:pay, borderColor:'#4f91f5', borderWidth:2, pointRadius:0, tension:.1,
-        fill:{target:'origin',above:'rgba(79,145,245,.07)'} },
-      { data:pnl, borderColor:'#34d399', borderWidth:1.5, borderDash:[5,4], pointRadius:0, tension:.1 }
+      {data:pay,borderColor:'#4080f0',borderWidth:2,pointRadius:0,tension:.1,
+       fill:{target:'origin',above:'rgba(64,128,240,.06)'}},
+      {data:pnl,borderColor:'#36c47a',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.1}
     ];
   }
-  /* Zero break-even line */
-  ds.push({ data:points.map(function(st){return{x:st,y:0};}),
-    borderColor:'rgba(255,255,255,.15)', borderWidth:1, borderDash:[2,2], pointRadius:0, tension:0 });
+  /* Zero reference line */
+  var zd=[];
+  for(var i=0;i<=n;i++) zd.push({x:lo+i*step,y:0});
+  ds.push({data:zd,borderColor:'rgba(255,255,255,.12)',borderWidth:1,borderDash:[2,2],pointRadius:0,tension:0});
 
   destroyChart(canvasId);
-  CHARTS[canvasId] = new Chart(document.getElementById(canvasId), {
-    type: 'line',
-    data: { datasets: ds },
-    options: opts
-  });
+  var canvas = document.getElementById(canvasId);
+  CHARTS[canvasId] = new Chart(canvas, { type:'line', data:{datasets:ds}, options:opts });
+
+  /* ── Draw breakeven annotations on the chart after render ── */
+  var bePoints = [];
+  if (showBoth) {
+    if (callBE >= lo && callBE <= hi) bePoints.push({x:callBE, label:fmtX(callBE), color:'#36c47a'});
+    if (putBE  >= lo && putBE  <= hi) bePoints.push({x:putBE,  label:fmtX(putBE), color:'#c28830'});
+  } else {
+    var beX   = type === 'call' ? callBE : putBE;
+    var beClr = type === 'call' ? '#36c47a' : '#c28830';
+    var beLbl = type === 'call' ? fmtX(callBE) : fmtX(putBE);
+    if (beX >= lo && beX <= hi) bePoints.push({x:beX, label:beLbl, color:beClr});
+  }
+  drawBEAnnotations(CHARTS[canvasId], canvas, bePoints);
+
+  /* Hover calcFn */
+  var calcFn = showBoth
+    ? function(st) { return [
+        {label:'Call payoff', value:Math.max(st-K,0),       color:'#4080f0'},
+        {label:'Put payoff',  value:Math.max(K-st,0),       color:'#d95368'},
+        {label:'Call P&L',   value:Math.max(st-K,0)-cPrem, color:'#36c47a'},
+        {label:'Put P&L',    value:Math.max(K-st,0)-pPrem, color:'#c28830'}
+      ]; }
+    : function(st) {
+        var payoff = type==='call' ? Math.max(st-K,0) : Math.max(K-st,0);
+        var lbl    = type==='call' ? 'Call' : 'Put';
+        return [
+          {label: lbl + ' payoff', value: payoff,          color:'#4080f0'},
+          {label: lbl + ' P&L',   value: payoff - cPrem,  color:'#36c47a'}
+        ];
+      };
+
+  attachHover(CHARTS[canvasId], canvas, 'Underlying', calcFn);
 }
 
-function drawSens(S, K, sig, r, q, T) {
-  var points = chartPoints(S, K, sig, T);
+/* ── Draw breakeven vertical lines on chart canvas ──────────────────
+   Clean, minimal design:
+   — Solid vertical line at the BE price
+   — Glowing dot at y=0 (exact breakeven cross)
+   — Compact tag inside chart, to the side of the line, at mid-height
+   — Tick + value below x-axis
+──────────────────────────────────────────────────────────────────── */
+function drawBEAnnotations(chartInst, canvas, bePoints) {
+  if (!bePoints || bePoints.length === 0) return;
 
-  var cp=[], pp=[];
-  points.forEach(function(Sv){
-    var sqT=Math.sqrt(T), d1=(Math.log(Sv/K)+(r-q+.5*sig*sig)*T)/(sig*sqT), d2=d1-sig*sqT;
-    cp.push({x:Sv, y:Sv*Math.exp(-q*T)*Phi(d1)-K*Math.exp(-r*T)*Phi(d2)});
-    pp.push({x:Sv, y:K*Math.exp(-r*T)*Phi(-d2)-Sv*Math.exp(-q*T)*Phi(-d1)});
-  });
+  function annotate() {
+    var area   = chartInst.chartArea;
+    var xScale = chartInst.scales.x;
+    var yScale = chartInst.scales.y;
+    if (!area || !xScale || !yScale) { setTimeout(annotate, 50); return; }
 
-  var opts = baseOpts('Spot price', 'Premium value');
-  opts.plugins.tooltip = Object.assign({}, TOOLTIP, {
-    callbacks: {
-      title: function(items) {
-        var x = items[0].parsed.x;
-        var xr = Math.round(x * 100) / 100;
-        return 'Spot: ' + (xr >= 1000 ? xr.toLocaleString() : xr.toFixed(2));
-      },
-      label: function(ctx) {
-        var names = ['Call premium','Put premium'];
-        var v = ctx.parsed.y;
-        return names[ctx.datasetIndex] + ':  ' + (Math.abs(v) >= 1000
-          ? v.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})
-          : v.toFixed(2));
+    var ctx    = canvas.getContext('2d');
+    var midY   = area.top + (area.bottom - area.top) / 2;
+
+    bePoints.forEach(function(be, idx) {
+      var px  = xScale.getPixelForValue(be.x);
+      var py0 = yScale.getPixelForValue(0);
+      if (px < area.left || px > area.right) return;
+
+      ctx.save();
+
+      /* ── Vertical line — solid, 1px, full chart height ── */
+      ctx.beginPath();
+      ctx.moveTo(px, area.top);
+      ctx.lineTo(px, area.bottom);
+      ctx.strokeStyle = be.color;
+      ctx.lineWidth   = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.globalAlpha = 0.7;
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      /* ── Dot at y=0 — the exact breakeven crossing ── */
+      if (py0 >= area.top - 2 && py0 <= area.bottom + 2) {
+        /* Outer soft ring */
+        ctx.beginPath();
+        ctx.arc(px, py0, 7, 0, Math.PI * 2);
+        ctx.fillStyle   = be.color;
+        ctx.globalAlpha = 0.15;
+        ctx.fill();
+        /* Solid dot */
+        ctx.beginPath();
+        ctx.arc(px, py0, 4, 0, Math.PI * 2);
+        ctx.fillStyle   = be.color;
+        ctx.globalAlpha = 1;
+        ctx.fill();
+        ctx.strokeStyle = '#07090f';
+        ctx.lineWidth   = 1.5;
+        ctx.stroke();
       }
-    }
-  });
+
+      /* ── Compact inline tag inside chart ──
+         Shows "BE 1,484.10" in a tight pill,
+         placed at 1/3 height of chart, to the right of the line
+         (flips left if near right edge)                         ── */
+      ctx.globalAlpha = 1;
+      var tag   = 'BE  ' + be.x.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+      ctx.font  = '500 10.5px JetBrains Mono, monospace';
+      var tw    = ctx.measureText(tag).width;
+      var pw    = tw + 14;
+      var ph    = 18;
+      var tagY  = area.top + (area.bottom - area.top) * 0.28 - ph / 2;
+      /* Alternate vertical position if multiple BEs */
+      if (idx === 1) tagY = area.top + (area.bottom - area.top) * 0.55 - ph / 2;
+
+      /* Prefer right of line, flip to left if not enough room */
+      var tagX  = px + 7;
+      if (tagX + pw > area.right - 4) tagX = px - pw - 7;
+      if (tagX < area.left + 2)       tagX = area.left + 2;
+
+      /* Tag background */
+      ctx.fillStyle   = '#0d1117';
+      ctx.globalAlpha = 0.92;
+      ctx.beginPath();
+      if (ctx.roundRect) { ctx.roundRect(tagX, tagY, pw, ph, 3); }
+      else               { ctx.rect(tagX, tagY, pw, ph); }
+      ctx.fill();
+
+      /* Tag border — colour of the line */
+      ctx.strokeStyle = be.color;
+      ctx.lineWidth   = 1;
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      if (ctx.roundRect) { ctx.roundRect(tagX, tagY, pw, ph, 3); }
+      else               { ctx.rect(tagX, tagY, pw, ph); }
+      ctx.stroke();
+
+      /* Tag text */
+      ctx.fillStyle    = be.color;
+      ctx.globalAlpha  = 1;
+      ctx.textAlign    = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(tag, tagX + 7, tagY + ph / 2);
+
+      /* ── Small tick below x-axis ── */
+      ctx.beginPath();
+      ctx.moveTo(px, area.bottom);
+      ctx.lineTo(px, area.bottom + 5);
+      ctx.strokeStyle = be.color;
+      ctx.lineWidth   = 1.5;
+      ctx.globalAlpha = 0.9;
+      ctx.stroke();
+
+      ctx.restore();
+    });
+  }
+
+  setTimeout(annotate, 30);
+}
+
+/* ── drawSens — Premium vs Spot ──────────────────────────────────────── */
+function drawSens(S, K, sig, r, q, T, optType) {
+  var rng  = getRange(S, K, sig, T);
+  var lo   = rng.lo, hi = rng.hi;
+  var n    = 300;
+  var step = (hi - lo) / n;
+  var opts = baseOpts('Spot price', 'Premium value', lo, hi);
+  var cp=[],pp=[];
+
+  function calcCall(Sv) {
+    var sqT=Math.sqrt(T),d1=(Math.log(Sv/K)+(r-q+.5*sig*sig)*T)/(sig*sqT),d2=d1-sig*sqT;
+    return Sv*Math.exp(-q*T)*Phi(d1)-K*Math.exp(-r*T)*Phi(d2);
+  }
+  function calcPut(Sv) {
+    var sqT=Math.sqrt(T),d1=(Math.log(Sv/K)+(r-q+.5*sig*sig)*T)/(sig*sqT),d2=d1-sig*sqT;
+    return K*Math.exp(-r*T)*Phi(-d2)-Sv*Math.exp(-q*T)*Phi(-d1);
+  }
+
+  for(var i=0;i<=n;i++){
+    var Sv=lo+i*step;
+    cp.push({x:Sv,y:calcCall(Sv)});
+    pp.push({x:Sv,y:calcPut(Sv)});
+  }
+
+  /* Filter datasets based on option type */
+  var showCall = (optType !== 'put');
+  var showPut  = (optType !== 'call');
+  var datasets = [];
+  if (showCall) datasets.push({data:cp,borderColor:'#4080f0',borderWidth:2,pointRadius:0,tension:.2,fill:{target:'origin',above:'rgba(64,128,240,.06)'}});
+  if (showPut)  datasets.push({data:pp,borderColor:'#d95368',borderWidth:2,pointRadius:0,tension:.2,fill:{target:'origin',above:'rgba(217,83,104,.06)'}});
 
   destroyChart('sensChart');
-  CHARTS['sensChart'] = new Chart(document.getElementById('sensChart'), {
-    type: 'line',
-    data: { datasets: [
-      { data:cp, borderColor:'#4f91f5', borderWidth:2, pointRadius:0, tension:.2,
-        fill:{target:'origin',above:'rgba(79,145,245,.07)'} },
-      { data:pp, borderColor:'#f87171', borderWidth:2, pointRadius:0, tension:.2,
-        fill:{target:'origin',above:'rgba(248,113,113,.07)'} }
-    ]},
-    options: opts
+  var canvas = document.getElementById('sensChart');
+  CHARTS['sensChart'] = new Chart(canvas, {
+    type:'line',
+    data:{ datasets: datasets },
+    options:opts
+  });
+
+  attachHover(CHARTS['sensChart'], canvas, 'Spot', function(Sv) {
+    var rows = [];
+    if (showCall) rows.push({label:'Call premium', value:calcCall(Sv), color:'#4080f0'});
+    if (showPut)  rows.push({label:'Put premium',  value:calcPut(Sv),  color:'#d95368'});
+    return rows;
   });
 }
 
-function drawConv(S, K, T, r, q, u, d, Ns, style, type, bs0) {
+function drawConv(S, K, T, r, q, u, d, Ns, style, type, bs0, sig) {
+  /* Recompute u,d for EACH step count — u=e^(σ√(T/n)), d=1/u.
+     Using the same u,d for all n would give completely wrong prices. */
   var steps = [1,2,5,10,20,30,50,75,100,150,200];
   var prices = steps.map(function(n) {
-    var res = binCRR(S,K,T,r,q,n,u,d,style,type);
+    var un, dn;
+    if (sig && sig > 0) {
+      un = Math.exp(sig * Math.sqrt(T / n));
+      dn = 1 / un;
+    } else {
+      /* If called with direct u,d (no sig), scale to match new Δt */
+      var sigEst = Math.log(u) / Math.sqrt(T / Ns);
+      un = Math.exp(sigEst * Math.sqrt(T / n));
+      dn = 1 / un;
+    }
+    var res = binCRR(S,K,T,r,q,n,un,dn,style,type);
     return res ? res.price : null;
   });
   destroyChart('convChart');
   CHARTS['convChart'] = new Chart(document.getElementById('convChart'), {
     type: 'line',
     data: { labels: steps, datasets: [
-      { data: prices, borderColor:'#4f91f5', borderWidth:1.8,
-        pointRadius:3, pointBackgroundColor:'#4f91f5', tension:.3 },
+      { data: prices, borderColor:'#4080f0', borderWidth:1.8,
+        pointRadius:3, pointBackgroundColor:'#4080f0', tension:.3 },
       { data: steps.map(function(){ return bs0; }),
-        borderColor:'#34d399', borderWidth:1.2, borderDash:[4,3], pointRadius:0 }
+        borderColor:'#36c47a', borderWidth:1.2, borderDash:[4,3], pointRadius:0 }
     ]},
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins: { legend:{display:false}, tooltip: {
-        backgroundColor:TOOLTIP.backgroundColor,
-        borderColor:TOOLTIP.borderColor, borderWidth:1,
-        titleFont:TOOLTIP.titleFont, bodyFont:TOOLTIP.bodyFont, padding:10,
+        backgroundColor:'rgba(7,9,15,.97)',
+        borderColor:'rgba(255,255,255,.12)', borderWidth:1,
+        titleFont:{family:"'JetBrains Mono'",size:12}, bodyFont:{family:"'JetBrains Mono'",size:12}, padding:12, cornerRadius:6,
         callbacks: { label: function(c) {
           return (c.datasetIndex===0 ? 'Binomial: ' : 'BS ref:   ') +
                  (c.parsed.y != null ? c.parsed.y.toFixed(4) : 'n/a');
@@ -1221,42 +1760,41 @@ function drawSVGTree(S, K, T, r, q, Ns, u, d, style, type, p) {
   var svg = document.getElementById('bin-svg-tree');
   if (!svg) return;
 
-  var steps = Math.min(6, Ns);   /* cap at 6 for readability */
-  var nodeR = 30;
-  var colW  = 162;
-  var rowH  = 76;
-  var padX  = 56;
-  var padTop = 36;               /* room for step labels above */
-  var padBot = 20;
+  var steps  = Math.min(6, Ns);
+  var nodeR  = 34;
+  var colW   = 185;
+  var rowH   = 90;
+  var padX   = 66;
+  var hdrH   = 52;
+  var padBot = 28;
   var svgW   = padX * 2 + colW * steps;
-  var svgH   = padTop + rowH * steps + padBot;
+  var svgH   = hdrH + nodeR + rowH * steps + nodeR + padBot;
 
-  svg.setAttribute('width',   svgW);
-  svg.setAttribute('height',  svgH);
+  svg.setAttribute('width', svgW);
+  svg.setAttribute('height', svgH);
   svg.setAttribute('viewBox', '0 0 ' + svgW + ' ' + svgH);
   svg.innerHTML = '';
 
   var NS = 'http://www.w3.org/2000/svg';
 
-  /* ── Pre-compute all stock prices ── */
+  /* Stock prices */
   var stockPx = [], optVal = [];
-  for (var j=0; j<=steps; j++) {
+  for (var j = 0; j <= steps; j++) {
     stockPx[j] = []; optVal[j] = [];
-    for (var i=0; i<=j; i++)
-      stockPx[j][i] = S * Math.pow(u, j-i) * Math.pow(d, i);
+    for (var i = 0; i <= j; i++)
+      stockPx[j][i] = S * Math.pow(u, j - i) * Math.pow(d, i);
   }
 
-  /* ── Terminal option values ── */
-  for (var i=0; i<=steps; i++) {
+  /* Terminal payoffs */
+  for (var i = 0; i <= steps; i++)
     optVal[steps][i] = type === 'call'
       ? Math.max(stockPx[steps][i] - K, 0)
       : Math.max(K - stockPx[steps][i], 0);
-  }
 
-  /* ── Backward induction ── */
+  /* Backward induction */
   var disc = Math.exp(-r * (T / Ns));
-  for (var j=steps-1; j>=0; j--) {
-    for (var i=0; i<=j; i++) {
+  for (var j = steps - 1; j >= 0; j--) {
+    for (var i = 0; i <= j; i++) {
       var hold = disc * (p * optVal[j+1][i] + (1-p) * optVal[j+1][i+1]);
       if (style === 'american') {
         var ex = type === 'call'
@@ -1269,79 +1807,122 @@ function drawSVGTree(S, K, T, r, q, Ns, u, d, style, type, p) {
     }
   }
 
-  /* ── Node coordinates ── */
-  function cx(j)    { return padX + j * colW; }
-  function cy(j, i) {
-    var totalH = j * rowH;
-    var topY   = padTop + (steps * rowH - totalH) / 2;
-    return topY + i * rowH;
+  /* Delta at each non-terminal node: hedge ratio */
+  var deltaAt = [];
+  for (var j = 0; j < steps; j++) {
+    deltaAt[j] = [];
+    for (var i = 0; i <= j; i++) {
+      var Su = stockPx[j][i] * u, Sd = stockPx[j][i] * d;
+      deltaAt[j][i] = (optVal[j+1][i] - optVal[j+1][i+1]) / (Su - Sd);
+    }
   }
 
-  /* ── Helper: create SVG element ── */
+  /* Helpers */
+  function cx(j) { return padX + j * colW; }
+  function cy(j, i) {
+    var topY = hdrH + nodeR + (steps * rowH - j * rowH) / 2;
+    return topY + i * rowH;
+  }
   function el(tag, attrs) {
     var e = document.createElementNS(NS, tag);
     Object.keys(attrs).forEach(function(k) { e.setAttribute(k, attrs[k]); });
     return e;
   }
-  function txt(text, attrs, cls) {
+  function txt(content, x, y, cls, fill, size) {
     var e = document.createElementNS(NS, 'text');
-    Object.keys(attrs).forEach(function(k) { e.setAttribute(k, attrs[k]); });
-    if (cls) e.setAttribute('class', cls);
-    e.textContent = text;
+    e.setAttribute('x', x); e.setAttribute('y', y);
+    e.setAttribute('text-anchor', 'middle');
+    e.setAttribute('dominant-baseline', 'middle');
+    if (cls)  e.setAttribute('class', cls);
+    if (fill) e.setAttribute('fill', fill);
+    if (size) e.setAttribute('font-size', size);
+    e.textContent = content;
     return e;
   }
 
-  /* ── Draw branches first (behind nodes) ── */
-  for (var j=0; j<steps; j++) {
-    for (var i=0; i<=j; i++) {
-      var x1=cx(j), y1=cy(j,i), x2u=cx(j+1), y2u=cy(j+1,i), x2d=cx(j+1), y2d=cy(j+1,i+1);
+  /* Header */
+  svg.appendChild(el('line', {x1:padX/2,y1:hdrH-8,x2:svgW-padX/2,y2:hdrH-8,stroke:'rgba(255,255,255,.05)','stroke-width':'1'}));
+  for (var j = 0; j <= steps; j++) {
+    var lbl = j === 0 ? 'Now' : (j === steps ? 'Expiry' : 'Step ' + j);
+    svg.appendChild(txt(lbl, cx(j), hdrH/2, 'step-label'));
+    svg.appendChild(el('line', {x1:cx(j),y1:hdrH-8,x2:cx(j),y2:hdrH-2,stroke:'rgba(255,255,255,.1)','stroke-width':'1'}));
+  }
 
-      svg.appendChild(el('line', {x1:x1,y1:y1,x2:x2u,y2:y2u,class:'branch-up'}));
-      svg.appendChild(el('line', {x1:x1,y1:y1,x2:x2d,y2:y2d,class:'branch-dn'}));
-
-      /* Probability labels at midpoints */
-      var mxU=(x1+x2u)/2, myU=(y1+y2u)/2 - 8;
-      var mxD=(x1+x2d)/2, myD=(y1+y2d)/2 + 14;
-      svg.appendChild(txt('p = '+p.toFixed(3),   {'x':mxU,'y':myU,'text-anchor':'middle'}, 'prob-label'));
-      svg.appendChild(txt('1−p = '+(1-p).toFixed(3), {'x':mxD,'y':myD,'text-anchor':'middle'}, 'prob-label'));
+  /* Branches */
+  for (var j = 0; j < steps; j++) {
+    for (var i = 0; i <= j; i++) {
+      var x1=cx(j),y1=cy(j,i),xU=cx(j+1),yU=cy(j+1,i),xD=cx(j+1),yD=cy(j+1,i+1);
+      svg.appendChild(el('line',{x1:x1,y1:y1,x2:xU,y2:yU,stroke:'rgba(64,128,240,.38)','stroke-width':'1.4','stroke-linecap':'round'}));
+      svg.appendChild(el('line',{x1:x1,y1:y1,x2:xD,y2:yD,stroke:'rgba(217,83,104,.28)','stroke-width':'1.4','stroke-linecap':'round'}));
+      /* Prob labels only on first column or small trees */
+      if (j === 0 || steps <= 3) {
+        svg.appendChild(txt('p='+p.toFixed(3),       (x1+xU)/2, (y1+yU)/2-10, 'prob-label'));
+        svg.appendChild(txt('1−p='+(1-p).toFixed(3), (x1+xD)/2, (y1+yD)/2+14, 'prob-label'));
+      }
     }
   }
 
-  /* ── Draw nodes ── */
-  for (var j=0; j<=steps; j++) {
-    for (var i=0; i<=j; i++) {
-      var x=cx(j), y=cy(j,i);
-      var sp=stockPx[j][i], ov=optVal[j][i];
-      var itm = type==='call' ? sp > K : sp < K;
+  /* Nodes */
+  for (var j = 0; j <= steps; j++) {
+    for (var i = 0; i <= j; i++) {
+      var x = cx(j), y = cy(j,i);
+      var sp = stockPx[j][i], ov = optVal[j][i];
+      var itm = type === 'call' ? sp > K : sp < K;
+      var isTerminal = (j === steps);
+      var hasDelta   = !isTerminal && deltaAt[j] && deltaAt[j][i] !== undefined;
 
-      /* Circle */
-      svg.appendChild(el('circle', {
+      /* Shadow */
+      svg.appendChild(el('circle',{cx:x+1,cy:y+1,r:nodeR,fill:'rgba(0,0,0,.22)'}));
+
+      /* Body */
+      svg.appendChild(el('circle',{
         cx:x, cy:y, r:nodeR,
-        fill: '#1c2435',
-        stroke: itm ? '#4f91f5' : '#2a3549',
-        'stroke-width': itm ? '2' : '1.2'
+        fill: itm ? '#0c1a30' : '#111827',
+        stroke: itm ? '#4080f0' : 'rgba(255,255,255,.08)',
+        'stroke-width': itm ? '2' : '1'
       }));
 
-      /* Stock price (top half) */
-      svg.appendChild(txt(sp.toFixed(1), {'x':x,'y':y-7,'text-anchor':'middle'}, 'node-stock'));
-
-      /* Divider */
-      svg.appendChild(el('line', {
-        x1:x-nodeR+7, y1:y, x2:x+nodeR-7, y2:y,
-        stroke:'#2a3549', 'stroke-width':'0.8'
-      }));
-
-      /* Option value (bottom half) */
-      svg.appendChild(txt(ov.toFixed(2), {'x':x,'y':y+14,'text-anchor':'middle'}, 'node-option'));
+      if (hasDelta) {
+        /* 3-row node: stock / option / delta */
+        svg.appendChild(txt(sp.toFixed(1), x, y-13, 'node-stock'));
+        svg.appendChild(el('line',{x1:x-nodeR+8,y1:y-2,x2:x+nodeR-8,y2:y-2,
+          stroke:itm?'rgba(64,128,240,.2)':'rgba(255,255,255,.05)','stroke-width':'0.7'}));
+        svg.appendChild(txt(ov.toFixed(2), x, y+8, 'node-option'));
+        svg.appendChild(el('line',{x1:x-nodeR+8,y1:y+19,x2:x+nodeR-8,y2:y+19,
+          stroke:itm?'rgba(64,128,240,.15)':'rgba(255,255,255,.04)','stroke-width':'0.7'}));
+        svg.appendChild(txt('Δ ' + deltaAt[j][i].toFixed(3), x, y+27, null, '#4080f0', '9'));
+      } else {
+        /* Terminal: 2-row — stock / option */
+        svg.appendChild(txt(sp.toFixed(1), x, y-8, 'node-stock'));
+        svg.appendChild(el('line',{x1:x-nodeR+8,y1:y+2,x2:x+nodeR-8,y2:y+2,
+          stroke:itm?'rgba(64,128,240,.2)':'rgba(255,255,255,.05)','stroke-width':'0.7'}));
+        svg.appendChild(txt(ov.toFixed(2), x, y+13, 'node-option'));
+      }
     }
-
-    /* Step label at top of each column */
-    svg.appendChild(txt(
-      j === 0 ? 'Now' : 'Step ' + j,
-      { x: cx(j), y: padTop - 10, 'text-anchor': 'middle' },
-      'step-label'
-    ));
   }
+}
+
+/* ── Hedge ratio whole-number display ──────────────────────────────────
+   Finds smallest lot size N such that N × |delta| rounds to a whole number
+   within 2% tolerance. Shows "N options : M shares" format.
+──────────────────────────────────────────────────────────────────────── */
+function hedgeLot(delta) {
+  var d = Math.abs(delta);
+  if (d < 0.0001 || d > 0.9999) return null;
+  /* Try lot sizes 1 to 200, find cleanest whole-number hedge */
+  var best = null, bestErr = 1;
+  for (var n = 1; n <= 200; n++) {
+    var shares = n * d;
+    var rounded = Math.round(shares);
+    if (rounded === 0) continue;
+    var err = Math.abs(shares - rounded) / rounded;
+    if (err < 0.02 && (best === null || n < best.n)) {
+      best = { n: n, shares: rounded, exact: shares };
+      bestErr = err;
+      if (err < 0.001) break; /* close enough, stop early */
+    }
+  }
+  return best;
 }
 
 /* ── Boot ── */
